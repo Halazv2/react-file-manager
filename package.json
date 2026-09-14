@@ -1,0 +1,74 @@
+{
+  "name": "@halazv2/react-file-manager",
+  "version": "0.1.0",
+  "description": "Headless-ish React file browser with Finder-style spring-loaded folders and drag-and-drop.",
+  "type": "module",
+  "license": "MIT",
+  "author": "halazv2",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/halazv2/react-file-manager.git"
+  },
+  "homepage": "https://github.com/halazv2/react-file-manager#readme",
+  "bugs": {
+    "url": "https://github.com/halazv2/react-file-manager/issues"
+  },
+  "keywords": [
+    "react",
+    "file-manager",
+    "file-browser",
+    "finder",
+    "drag-and-drop",
+    "spring-loaded",
+    "tailwind"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./styles.css": "./dist/styles.css",
+    "./theme.css": "./dist/react-file-manager.css"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --config vite.config.lib.ts && npm run build:css",
+    "build:css": "tailwindcss -i ./src/styles.css -o ./dist/styles.css --minify",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.5.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.8.3",
+    "vite": "^8.3.0",
+    "vite-plugin-dts": "^5.1.0",
+    "vitest": "^5.0.0"
+  }
+}
