@@ -1,0 +1,31 @@
+@import "tailwindcss";
+@source "../src";
+@source ".";
+
+@theme {
+  --color-rfm-primary: #2563eb;
+  --color-rfm-hover: color-mix(in srgb, #2563eb 12%, transparent);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 10% -10%, #dbeafe 0%, transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, #fce7f3 0%, transparent 50%),
+    #f3f4f6;
+  color: #111827;
+  font-family:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+.rfm-root {
+  --rfm-primary: #2563eb;
+  --rfm-hover: color-mix(in srgb, var(--rfm-primary) 12%, transparent);
+}
