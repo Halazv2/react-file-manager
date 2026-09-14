@@ -1,0 +1,18 @@
+.rfm-root {
+  --rfm-primary: #2563eb;
+  --rfm-hover: color-mix(in srgb, var(--rfm-primary) 12%, transparent);
+  color: #111827;
+  font-family:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+.rfm-more {
+  opacity: 0;
+}
+
+.rfm-row:hover .rfm-more,
+.rfm-tree-row:hover .rfm-more,
+.rfm-more:focus-visible {
+  opacity: 1;
+}

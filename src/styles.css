@@ -1,0 +1,9 @@
+@import "tailwindcss";
+@source "./";
+@source "./components";
+@import "./theme.css";
+
+@theme {
+  --color-rfm-primary: #2563eb;
+  --color-rfm-hover: color-mix(in srgb, #2563eb 12%, transparent);
+}
