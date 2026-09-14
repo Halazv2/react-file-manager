@@ -2,6 +2,8 @@
 
 Headless-ish React file browser with **Finder-style spring-loaded folders** and drag-and-drop. Bring your own data and API.
 
+**Live demo:** https://halazv2.github.io/react-file-manager/
+
 Hover a folder while dragging — it expands in the sidebar and opens in the browser after a short delay, just like macOS Finder.
 
 ## Install
