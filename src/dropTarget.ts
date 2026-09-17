@@ -1,5 +1,6 @@
 import type { DragEvent, Dispatch, SetStateAction } from "react";
 
+import { isExternalFileDrag } from "./droppedItems";
 import type { DropTargetId } from "./types";
 
 function isCrossingBoundary(event: DragEvent<HTMLElement>): boolean {
@@ -39,7 +40,9 @@ export function folderDropTargetHandlers({
     onDragOver: (event: DragEvent<HTMLElement>) => {
       if (!canManage) return;
       event.preventDefault();
-      event.dataTransfer.dropEffect = "move";
+      event.dataTransfer.dropEffect = isExternalFileDrag(event.dataTransfer)
+        ? "copy"
+        : "move";
       setDropTargetId(targetId);
     },
     onDragLeave: (event: DragEvent<HTMLElement>) => {

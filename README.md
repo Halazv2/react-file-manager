@@ -82,6 +82,7 @@ export function App() {
         onOpenFile={(id) => console.log("open", id)}
         onGetPreviewUrl={(id) => `/api/files/${id}/preview`}
         onUpload={(files, folderId) => console.log(files, folderId)}
+        onImport={(items, folderId) => console.log(items, folderId)}
         onCreateFolder={(parentId) => console.log("new folder in", parentId)}
         onCreateFile={(folderId) => console.log("new file in", folderId)}
         onRename={(id, name) => console.log("rename", id, name)}
@@ -107,6 +108,7 @@ The component fills its parent. Give the parent a height.
 - Pins and recent folders (`storageKey` → localStorage)
 - Breadcrumbs, multi-select, keyboard navigation
 - Drag-and-drop move with spring-loaded folders
+- OS file drops via `onUpload`; OS folder drops via `onImport` (keeps the folder tree)
 - Virtualized list view for large folders
 - In-pane preview: images always; PDF first page + text when `pdfjs-dist` is installed and `onGetPreviewUrl` is set
 - Context / “more” menus via `getItemActions`
@@ -152,7 +154,8 @@ export function mapLibraryToNodes(nodes: LibraryNode[]): FileManagerNode[] {
 | `onMove` | `(ids, folderId) => void` | Fired on drop. Use `moveNodes` for local state. |
 | `onOpenFile` | `(id) => void` | Double-click or Enter on a file. |
 | `onGetPreviewUrl` | `(id) => string \| null \| Promise<…>` | Preview URL for details pane. |
-| `onUpload` | `(files, folderId) => void` | OS file drop or empty-state upload. |
+| `onUpload` | `(files, folderId) => void` | File picker or OS file drop. Folder drops without `onImport` are flattened into files with `webkitRelativePath`. |
+| `onImport` | `(items, folderId) => void` | OS folder (and mixed) drops as a tree. Prefer this to create folders instead of documents. |
 | `onCreateFolder` | `(parentId) => void` | New folder action. |
 | `onCreateFile` | `(folderId) => void` | Optional “new document” entry. |
 | `onRename` | `(id, name) => void` | Inline / menu rename. |
@@ -180,6 +183,14 @@ type FileManagerNode = {
   size?: number;
   meta?: Record<string, unknown>;
 };
+```
+
+`FileManagerDropItem` (OS drops into `onImport`):
+
+```ts
+type FileManagerDropItem =
+  | { kind: "file"; name: string; file: File }
+  | { kind: "folder"; name: string; children: FileManagerDropItem[] };
 ```
 
 `FileManagerAction`:

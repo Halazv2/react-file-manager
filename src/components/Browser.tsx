@@ -4,6 +4,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { Breadcrumbs } from "./Breadcrumbs";
 import { FileManagerBulkBar, Item } from "./Item";
+import { isExternalFileDrag } from "../droppedItems";
 import { CardsIcon, FolderIcon, ListIcon, SearchIcon, UploadIcon } from "../icons";
 import { useFileManagerContext } from "../context";
 import { cn, FOCUS_RING, ROW_TRANSITION } from "../styles";
@@ -25,7 +26,7 @@ export function Browser() {
       onDragOver={(event) => {
         if (!canManage) return;
         event.preventDefault();
-        event.dataTransfer.dropEffect = "move";
+        event.dataTransfer.dropEffect = isExternalFileDrag(event.dataTransfer) ? "copy" : "move";
       }}
       onDrop={(event) => {
         if (!canManage) return;

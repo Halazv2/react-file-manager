@@ -2,6 +2,7 @@ import { createElement, useCallback, useDeferredValue, useEffect, useMemo, useRe
 import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
 
 import type { FileManagerContextValue } from "./context";
+import { FILE_MANAGER_DRAG_MIME, isInternalFileManagerDrag, planExternalDrop, readDataTransferItems } from "./droppedItems";
 import { folderDropTargetHandlers } from "./dropTarget";
 import { StarIcon, StarSolidIcon } from "./icons";
 import { getFavoriteFolderIds, getRecentFolderIds, MAX_RECENT_FOLDERS, pushRecentFolderId, toggleFavoriteFolderId } from "./pins";
@@ -9,8 +10,6 @@ import { buildFilePreview } from "./preview";
 import { idsInRange } from "./selection";
 import { folderContainsId, folderHasChildFolders, getBreadcrumbs, getExtension, getNodeById, listFolder, searchNodes } from "./tree";
 import type { DropTargetId, FileManagerAction, FileManagerItem, FileManagerProps, FileManagerView, FilePreviewResult } from "./types";
-
-const DRAG_MIME = "application/x-file-manager-item";
 
 function useControllableState<T>(controlled: T | undefined, defaultValue: T, onChange?: (value: T) => void): [T, (value: T) => void] {
   const [uncontrolled, setUncontrolled] = useState(defaultValue);
@@ -42,6 +41,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     onOpenFile,
     onOpenFolder,
     onUpload,
+    onImport,
     onCreateFolder,
     onCreateFile,
     onDelete,
@@ -295,7 +295,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
       suppressClickRef.current = true;
       dropDidHappen.current = false;
       event.dataTransfer.effectAllowed = "move";
-      event.dataTransfer.setData(DRAG_MIME, JSON.stringify({ id: item.id, kind: item.kind }));
+      event.dataTransfer.setData(FILE_MANAGER_DRAG_MIME, JSON.stringify({ id: item.id, kind: item.kind }));
       event.dataTransfer.setData("text/plain", `${item.kind}:${item.id}`);
       dragItem.current = { id: item.id, kind: item.kind };
       if (!selectedIdsRef.current.includes(item.id)) {
@@ -319,8 +319,16 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
         setRecentIds(pushRecentFolderId(storageKey, targetFolderId));
       }
 
-      if (event.dataTransfer.files.length) {
-        await onUpload?.(Array.from(event.dataTransfer.files), targetFolderId);
+      const isInternal = Boolean(dragItem.current) || isInternalFileManagerDrag(event.dataTransfer);
+      if (!isInternal) {
+        if (!canManage) return;
+        const dropped = await readDataTransferItems(event.dataTransfer);
+        const plan = planExternalDrop(dropped, Boolean(onImport));
+        if (plan.action === "import") {
+          await onImport?.(plan.items, targetFolderId);
+        } else if (plan.action === "upload") {
+          await onUpload?.(plan.files, targetFolderId);
+        }
         return;
       }
 
@@ -336,7 +344,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
       setSelectedNode(null);
       setPreview(null);
     },
-    [canManage, clearHoverTimers, onMove, onUpload, setFolderId, setSelectedIds, storageKey],
+    [canManage, clearHoverTimers, onImport, onMove, onUpload, setFolderId, setSelectedIds, storageKey],
   );
 
   const onInternalDragEnd = useCallback((): void => {

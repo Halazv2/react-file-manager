@@ -1,6 +1,7 @@
 import {
   FileManager,
   moveNodes,
+  type FileManagerDropItem,
   type FileManagerNode
 } from "@halazv2/react-file-manager";
 import { useCallback, useState } from "react";
@@ -43,13 +44,7 @@ export default function App() {
 
   const onUpload = useCallback(
     (files: File[], folderId: string | null) => {
-      const uploaded: FileManagerNode[] = files.map((file) => ({
-        id: crypto.randomUUID(),
-        name: file.name,
-        kind: "file",
-        extension: file.name.split(".").pop(),
-        size: file.size
-      }));
+      const uploaded = files.map(fileToNode);
       setNodes((current) =>
         uploaded.reduce(
           (tree, node) => insertNode(tree, folderId, node),
@@ -57,6 +52,25 @@ export default function App() {
         )
       );
       notify(`Uploaded ${files.length} file${files.length === 1 ? "" : "s"}`);
+    },
+    [notify]
+  );
+
+  const onImport = useCallback(
+    (items: FileManagerDropItem[], folderId: string | null) => {
+      const imported = items.map(dropItemToNode);
+      setNodes((current) =>
+        imported.reduce(
+          (tree, node) => insertNode(tree, folderId, node),
+          current
+        )
+      );
+      const folderCount = items.filter((item) => item.kind === "folder").length;
+      notify(
+        folderCount
+          ? `Imported ${folderCount} folder${folderCount === 1 ? "" : "s"}`
+          : `Uploaded ${items.length} file${items.length === 1 ? "" : "s"}`
+      );
     },
     [notify]
   );
@@ -105,6 +119,7 @@ export default function App() {
             onCreateFolder={onCreateFolder}
             onCreateFile={() => notify("Create file")}
             onUpload={onUpload}
+            onImport={onImport}
             onDelete={onDelete}
             onRename={(id, name) => {
               setNodes((current) => renameNode(current, id, name));
@@ -129,6 +144,26 @@ export default function App() {
       )}
     </div>
   );
+}
+
+function fileToNode(file: File): FileManagerNode {
+  return {
+    id: crypto.randomUUID(),
+    name: file.name,
+    kind: "file",
+    extension: file.name.split(".").pop(),
+    size: file.size
+  };
+}
+
+function dropItemToNode(item: FileManagerDropItem): FileManagerNode {
+  if (item.kind === "file") return fileToNode(item.file);
+  return {
+    id: crypto.randomUUID(),
+    name: item.name,
+    kind: "folder",
+    children: item.children.map(dropItemToNode)
+  };
 }
 
 function findNode(

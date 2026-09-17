@@ -1,5 +1,9 @@
 import type { ReactNode } from "react";
 
+import type { FileManagerDropItem } from "./droppedItems";
+
+export type { FileManagerDropItem };
+
 export type FileManagerKind = "folder" | "file";
 
 export type FileManagerView = "list" | "cards";
@@ -69,6 +73,11 @@ export interface FileManagerProps {
   onOpenFolder?: (id: string | null) => void;
   onUpload?: (
     files: File[],
+    folderId: string | null
+  ) => void | Promise<void>;
+  /** OS folder/file drops. Folders keep their tree; files are `{ kind: "file", file }`. */
+  onImport?: (
+    items: FileManagerDropItem[],
     folderId: string | null
   ) => void | Promise<void>;
   onCreateFolder?: (parentId: string | null) => void;

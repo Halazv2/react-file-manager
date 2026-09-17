@@ -1,4 +1,13 @@
 export { FileManager } from "./FileManager";
+export {
+  FILE_MANAGER_DRAG_MIME,
+  filesFromDroppedItems,
+  isExternalFileDrag,
+  isInternalFileManagerDrag,
+  planExternalDrop,
+  readDataTransferItems,
+  readFileSystemEntries
+} from "./droppedItems";
 export { folderDropTargetHandlers } from "./dropTarget";
 export { defaultNodeIcon, FileTypeIcon, FolderTypeIcon } from "./fileIcons";
 export {
@@ -28,6 +37,7 @@ export {
 export type {
   DropTargetId,
   FileManagerAction,
+  FileManagerDropItem,
   FileManagerItem,
   FileManagerKind,
   FileManagerNode,
