@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { Breadcrumbs } from "./Breadcrumbs";
 import { Item } from "./Item";
@@ -6,6 +8,9 @@ import { CardsIcon, FolderIcon, ListIcon, SearchIcon, UploadIcon } from "../icon
 import { useFileManagerContext } from "../context";
 import { cn, FOCUS_RING, ROW_TRANSITION } from "../styles";
 import type { FileManagerItem } from "../types";
+
+const LIST_ROW_HEIGHT = 40;
+const VIRTUALIZE_AFTER = 40;
 
 export function Browser() {
   const {
@@ -24,11 +29,6 @@ export function Browser() {
     onUpload,
     fileInputRef
   } = useFileManagerContext();
-
-  const listClassName =
-    view === "cards"
-      ? "grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] content-start gap-2.5 p-3"
-      : "flex flex-col gap-0.5 px-2.5 pb-4 pt-2";
 
   const showingSpring = viewItems !== items;
   const visible = showingSpring ? viewItems : items;
@@ -88,7 +88,6 @@ export function Browser() {
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <ItemGrid
           items={visible}
-          className={listClassName}
           emptyLabel={
             searchQuery.trim() && !showingSpring
               ? "No matching files"
@@ -99,7 +98,7 @@ export function Browser() {
           isBusy={isBusy}
         />
         {selectedIds.length > 1 && (
-          <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-gray-900 py-1.5 px-4 text-xs text-white shadow-[0_12px_32px_rgba(15,23,42,0.35)]">
+          <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-gray-900 px-4 py-1.5 text-xs text-white shadow-[0_12px_32px_rgba(15,23,42,0.35)]">
             {selectedIds.length} selected
           </div>
         )}
@@ -126,14 +125,12 @@ export function Browser() {
 
 function ItemGrid({
   items,
-  className,
   emptyLabel,
   showEmptyActions,
   folderId,
   isBusy
 }: {
   items: FileManagerItem[];
-  className: string;
   emptyLabel: string;
   showEmptyActions: boolean;
   folderId: string | null;
@@ -141,58 +138,104 @@ function ItemGrid({
 }) {
   const { view, canManage, onCreateFolder, fileInputRef } =
     useFileManagerContext();
+  const parentRef = useRef<HTMLDivElement>(null);
+  const useVirtual = view === "list" && items.length >= VIRTUALIZE_AFTER;
+
+  const rowVirtualizer = useVirtualizer({
+    count: useVirtual ? items.length : 0,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => LIST_ROW_HEIGHT,
+    overscan: 10
+  });
 
   return (
-    <div className="relative h-full overflow-y-auto overscroll-contain">
+    <div
+      ref={parentRef}
+      className="relative h-full overflow-y-auto overscroll-contain"
+    >
       {isBusy && (
         <div className="absolute inset-0 z-20 bg-white/50" aria-busy="true" />
       )}
-      <div className={className} role="listbox" aria-label="Folder contents">
-        {items.length === 0 ? (
-          <div
-            className={cn(
-              "flex min-h-[240px] flex-col items-center justify-center gap-3 p-6 text-center text-[13px] text-gray-500",
-              view === "cards" ? "col-span-full" : ""
-            )}
-          >
-            <p className="m-0">{emptyLabel}</p>
-            {showEmptyActions && canManage && (
-              <div className="flex flex-wrap justify-center gap-2">
+      {items.length === 0 ? (
+        <div
+          className={cn(
+            "flex min-h-[240px] flex-col items-center justify-center gap-3 p-6 text-center text-[13px] text-gray-500"
+          )}
+        >
+          <p className="m-0">{emptyLabel}</p>
+          {showEmptyActions && canManage && (
+            <div className="flex flex-wrap justify-center gap-2">
+              <button
+                type="button"
+                className={cn(
+                  "inline-flex cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-gray-900 px-3 py-2 text-[13px] font-semibold text-white hover:bg-gray-700",
+                  ROW_TRANSITION,
+                  FOCUS_RING
+                )}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <UploadIcon size={16} />
+                Upload files
+              </button>
+              {onCreateFolder && (
                 <button
                   type="button"
                   className={cn(
-                    "inline-flex cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-gray-900 px-3 py-2 text-[13px] font-semibold text-white hover:bg-gray-700",
+                    "inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-[13px] font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-50",
                     ROW_TRANSITION,
                     FOCUS_RING
                   )}
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => onCreateFolder(folderId)}
                 >
-                  <UploadIcon size={16} />
-                  Upload files
+                  <FolderIcon size={16} />
+                  Create folder
                 </button>
-                {onCreateFolder && (
-                  <button
-                    type="button"
-                    className={cn(
-                      "inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-[13px] font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-50",
-                      ROW_TRANSITION,
-                      FOCUS_RING
-                    )}
-                    onClick={() => onCreateFolder(folderId)}
-                  >
-                    <FolderIcon size={16} />
-                    Create folder
-                  </button>
-                )}
+              )}
+            </div>
+          )}
+        </div>
+      ) : useVirtual ? (
+        <div
+          className="relative w-full px-2.5 pt-2 pb-4"
+          style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+          role="listbox"
+          aria-label="Folder contents"
+        >
+          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+            const item = items[virtualRow.index];
+            if (!item) return null;
+            return (
+              <div
+                key={virtualRow.key}
+                data-index={virtualRow.index}
+                ref={rowVirtualizer.measureElement}
+                className="absolute top-0 left-0 w-full px-0"
+                style={{
+                  transform: `translateY(${virtualRow.start}px)`
+                }}
+              >
+                <div className="px-0 py-0.5">
+                  <Item item={item} index={virtualRow.index} />
+                </div>
               </div>
-            )}
-          </div>
-        ) : (
-          items.map((item, index) => (
+            );
+          })}
+        </div>
+      ) : (
+        <div
+          className={
+            view === "cards"
+              ? "grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] content-start gap-2.5 p-3"
+              : "flex flex-col gap-0.5 px-2.5 pt-2 pb-4"
+          }
+          role="listbox"
+          aria-label="Folder contents"
+        >
+          {items.map((item, index) => (
             <Item key={item.id} item={item} index={index} />
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

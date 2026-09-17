@@ -1,8 +1,14 @@
 # @halazv2/react-file-manager
 
+[![npm](https://img.shields.io/npm/v/%40halazv2%2Freact-file-manager.svg)](https://www.npmjs.com/package/@halazv2/react-file-manager)
+[![license](https://img.shields.io/npm/l/%40halazv2%2Freact-file-manager.svg)](./LICENSE)
+[![demo](https://img.shields.io/badge/demo-live-blue.svg)](https://halazv2.github.io/react-file-manager/)
+
 Headless-ish React file browser with **Finder-style spring-loaded folders** and drag-and-drop. Bring your own data and API.
 
 **Live demo:** https://halazv2.github.io/react-file-manager/
+
+![Spring-loaded folders demo](./docs/spring-load.gif)
 
 Hover a folder while dragging — it expands in the sidebar and opens in the browser after a short delay, just like macOS Finder.
 
@@ -87,12 +93,21 @@ The component fills its parent. Give the parent a height.
 - Breadcrumbs
 - Multi-select and keyboard navigation
 - Drag-and-drop move with spring-loaded folders
+- Virtualized list view for large folders
 - Controlled or uncontrolled search
 - Generic nodes — you own upload, preview, and menus
 
-## What it leaves out
+## Roadmap
 
-No backend, document preview pipeline, or app-specific menus. Pass `renderActions` / `renderPreview` if you need those.
+v1 stays focused on Finder-style navigation and DnD. These are intentionally out of scope for now, and planned as optional follow-ups later:
+
+- **Preview / PDF pipeline** — in-pane thumbnails and document preview
+- **App menus** — pluggable per-item action menus for host apps
+- **Upload widgets** — richer dropzones and progress UI
+- **Theming presets** — ready-made light/brand skins beyond CSS variables
+- **Mobile redesign** — touch-first layout and gestures
+
+If you need any of these today, use `renderPreview` / `renderActions` in the host app.
 
 ## Props
 

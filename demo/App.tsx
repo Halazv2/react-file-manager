@@ -85,8 +85,11 @@ export default function App() {
         </p>
       </div>
 
-      <div className="h-160 w-full max-w-6xl overflow-hidden rounded-2xl border border-black/10 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
-        <div className="flex h-10 items-center gap-2 border-b border-black/6 bg-gray-100 px-3">
+      <div
+        data-demo-window
+        className="h-[640px] w-full max-w-6xl overflow-hidden rounded-2xl border border-black/10 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
+      >
+        <div className="flex h-10 items-center gap-2 border-b border-black/[0.06] bg-gray-100 px-3">
           <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
           <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
           <span className="h-3 w-3 rounded-full bg-[#28c840]" />
@@ -94,7 +97,7 @@ export default function App() {
             My files
           </span>
         </div>
-        <div className="h-150">
+        <div className="h-[calc(640px-2.5rem)]">
           <FileManager
             nodes={nodes}
             onMove={onMove}
