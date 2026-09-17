@@ -9,9 +9,11 @@ import type {
 
 import type {
   DropTargetId,
+  FileManagerAction,
   FileManagerItem,
   FileManagerNode,
-  FileManagerView
+  FileManagerView,
+  FilePreviewResult
 } from "./types";
 
 export interface FileManagerContextValue {
@@ -57,7 +59,26 @@ export interface FileManagerContextValue {
   renderPreview?: (node: FileManagerItem | null) => ReactNode;
   renderActions?: (node: FileManagerNode) => ReactNode;
   onCreateFolder?: (parentId: string | null) => void;
+  onCreateFile?: (folderId: string | null) => void;
   onUpload?: (files: File[], folderId: string | null) => void | Promise<void>;
+  onOpenFile?: (id: string) => void;
+  onDownloadFile?: (id: string) => void | Promise<void>;
+  onDownloadFolder?: (id: string) => void | Promise<void>;
+  onRename?: (id: string, name: string) => void | Promise<void>;
+  onDelete?: (ids: string[]) => void;
+  storageKey?: string;
+  favoriteIds: string[];
+  recentIds: string[];
+  pinnedFolders: FileManagerItem[];
+  toggleFavorite: (event: MouseEvent, id: string) => void;
+  preview: FilePreviewResult | null;
+  isPreviewLoading: boolean;
+  previewEnabled: boolean;
+  resolveItemActions: (node: FileManagerItem) => FileManagerAction[];
+  bulkActions: FileManagerAction[];
+  contextMenu: { x: number; y: number; node: FileManagerItem } | null;
+  openContextMenu: (node: FileManagerItem, event: MouseEvent) => void;
+  closeContextMenu: () => void;
 }
 
 export const FileManagerContext = createContext<FileManagerContextValue | null>(

@@ -1,4 +1,6 @@
-import { FolderIcon, FileIcon } from "../icons";
+import { BulkActionBar, ContextMenuLayer, MoreMenuButton } from "./ActionMenu";
+import { defaultNodeIcon } from "../fileIcons";
+import { StarSolidIcon } from "../icons";
 import { useFileManagerContext } from "../context";
 import { cn, DROP_TARGET_CLASS, FOCUS_RING, ROW_TRANSITION } from "../styles";
 import { folderHasChildFolders, getExtension } from "../tree";
@@ -22,7 +24,9 @@ export function Item({
     onDragStart,
     folderDropHandlers,
     renderIcon,
-    renderActions
+    renderActions,
+    resolveItemActions,
+    openContextMenu
   } = useFileManagerContext();
 
   const isSelected = selectedIds.includes(item.id);
@@ -31,6 +35,7 @@ export function Item({
   const isDropTarget = dropTargetId === item.id && isFolder;
   const childCount = isFolder ? (item.children?.length ?? 0) : null;
   const extension = getExtension(item);
+  const actions = resolveItemActions(item);
 
   return (
     <div className="rfm-row min-w-0">
@@ -61,13 +66,9 @@ export function Item({
         {...(isFolder ? folderDropHandlers(item.id) : {})}
         onClick={(event) => selectItem(item, event)}
         onDoubleClick={() => activateItem(item)}
+        onContextMenu={(event) => openContextMenu(item, event)}
       >
-        {renderIcon?.(item) ??
-          (isFolder ? (
-            <FolderIcon size={view === "cards" ? 36 : 18} />
-          ) : (
-            <FileIcon size={view === "cards" ? 36 : 18} />
-          ))}
+        {renderIcon?.(item) ?? defaultNodeIcon(item, view === "cards" ? 36 : 18)}
         <span className="flex min-w-0 flex-col gap-px">
           <span
             className={cn(
@@ -92,16 +93,25 @@ export function Item({
               : (extension || "file").toUpperCase()}
           </span>
         )}
-        {renderActions && (
+        {renderActions ? (
           <span
             className={cn(
               "rfm-more",
               FOCUS_RING,
               isSelected || isFocused ? "opacity-100" : "",
-              view === "cards" ? "absolute right-1.5 top-1.5" : ""
+              view === "cards" ? "absolute top-1.5 right-1.5" : ""
             )}
           >
             {renderActions(item)}
+          </span>
+        ) : (
+          <span
+            className={cn(
+              view === "cards" ? "absolute top-1.5 right-1.5" : "",
+              isSelected || isFocused ? "opacity-100" : ""
+            )}
+          >
+            <MoreMenuButton actions={actions} label={`Manage ${item.name}`} />
           </span>
         )}
       </div>
@@ -120,11 +130,14 @@ export function FolderTree({
     viewFolderId,
     dropTargetId,
     expandedIds,
+    favoriteIds,
     openFolder,
     toggleExpanded,
     folderDropHandlers,
     renderIcon,
-    renderActions
+    renderActions,
+    resolveItemActions,
+    openContextMenu
   } = useFileManagerContext();
 
   return (
@@ -136,6 +149,8 @@ export function FolderTree({
           const isExpanded = expandedIds.has(folder.id);
           const isActive = viewFolderId === folder.id;
           const isDrop = dropTargetId === folder.id;
+          const isFavorite = favoriteIds.includes(folder.id);
+          const actions = resolveItemActions(folder);
 
           return (
             <div key={folder.id} className="min-w-0">
@@ -155,6 +170,7 @@ export function FolderTree({
                 )}
                 style={{ paddingLeft: 6 + depth * 12 }}
                 onClick={() => openFolder(folder.id)}
+                onContextMenu={(event) => openContextMenu(folder, event)}
                 {...folderDropHandlers(folder.id)}
               >
                 <button
@@ -164,7 +180,7 @@ export function FolderTree({
                     isExpanded ? "rotate-90" : "",
                     hasChildren
                       ? "cursor-pointer hover:bg-black/[0.06] hover:text-gray-900"
-                      : "invisible pointer-events-none",
+                      : "pointer-events-none invisible",
                     ROW_TRANSITION,
                     FOCUS_RING
                   )}
@@ -175,14 +191,32 @@ export function FolderTree({
                     toggleExpanded(event, folder.id);
                   }}
                 >
-                  <ChevronGlyph />
+                  <svg
+                    viewBox="0 0 24 24"
+                    width={14}
+                    height={14}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    aria-hidden
+                  >
+                    <path d="m9 6 6 6-6 6" />
+                  </svg>
                 </button>
-                {renderIcon?.(folder) ?? <FolderIcon size={16} />}
+                {renderIcon?.(folder) ?? defaultNodeIcon(folder, 16)}
                 <span className="min-w-0 flex-1 truncate" title={folder.name}>
                   {folder.name}
                 </span>
-                {renderActions && (
+                {isFavorite && (
+                  <StarSolidIcon className="shrink-0 text-amber-500" size={14} />
+                )}
+                {renderActions ? (
                   <span className="rfm-more">{renderActions(folder)}</span>
+                ) : (
+                  <MoreMenuButton
+                    actions={actions}
+                    label={`Manage ${folder.name}`}
+                  />
                 )}
               </div>
               {hasChildren && isExpanded && (
@@ -200,18 +234,20 @@ export function FolderTree({
   );
 }
 
-function ChevronGlyph() {
+export function FileManagerContextMenu() {
+  const { contextMenu, closeContextMenu, resolveItemActions } =
+    useFileManagerContext();
+  if (!contextMenu) return null;
   return (
-    <svg
-      viewBox="0 0 24 24"
-      width={14}
-      height={14}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden
-    >
-      <path d="m9 6 6 6-6 6" />
-    </svg>
+    <ContextMenuLayer
+      actions={resolveItemActions(contextMenu.node)}
+      position={{ x: contextMenu.x, y: contextMenu.y }}
+      onClose={closeContextMenu}
+    />
   );
+}
+
+export function FileManagerBulkBar() {
+  const { selectedIds, bulkActions } = useFileManagerContext();
+  return <BulkActionBar count={selectedIds.length} actions={bulkActions} />;
 }

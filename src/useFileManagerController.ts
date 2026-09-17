@@ -10,20 +10,31 @@ import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
 
 import type { FileManagerContextValue } from "./context";
 import { folderDropTargetHandlers } from "./dropTarget";
+import {
+  getFavoriteFolderIds,
+  getRecentFolderIds,
+  MAX_RECENT_FOLDERS,
+  pushRecentFolderId,
+  toggleFavoriteFolderId
+} from "./pins";
+import { buildFilePreview } from "./preview";
 import { idsInRange } from "./selection";
 import {
   folderContainsId,
   folderHasChildFolders,
   getBreadcrumbs,
+  getExtension,
   getNodeById,
   listFolder,
   searchNodes
 } from "./tree";
 import type {
   DropTargetId,
+  FileManagerAction,
   FileManagerItem,
   FileManagerProps,
-  FileManagerView
+  FileManagerView,
+  FilePreviewResult
 } from "./types";
 
 const DRAG_MIME = "application/x-file-manager-item";
@@ -58,16 +69,28 @@ export function useFileManagerController(
     showDetails = true,
     springLoadDelay = 500,
     isBusy = false,
+    storageKey,
+    enablePreview,
     onMove,
     onOpenFile,
     onOpenFolder,
     onUpload,
     onCreateFolder,
+    onCreateFile,
     onDelete,
+    onRename,
+    onDownloadFile,
+    onDownloadFolder,
+    onGetPreviewUrl,
+    getItemActions,
+    getBulkActions,
     renderIcon,
     renderPreview,
     renderActions
   } = props;
+
+  const previewEnabled =
+    enablePreview !== undefined ? enablePreview : Boolean(onGetPreviewUrl);
 
   const [folderId, setFolderId] = useControllableState(
     props.folderId,
@@ -95,9 +118,22 @@ export function useFileManagerController(
   const [selectedNode, setSelectedNode] = useState<FileManagerItem | null>(null);
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [dropTargetId, setDropTargetId] = useState<DropTargetId>(null);
-  const [springFolderId, setSpringFolderId] = useState<string | null | undefined>(
-    undefined
+  const [springFolderId, setSpringFolderId] = useState<
+    string | null | undefined
+  >(undefined);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>(() =>
+    storageKey ? getFavoriteFolderIds(storageKey) : []
   );
+  const [recentIds, setRecentIds] = useState<string[]>(() =>
+    storageKey ? getRecentFolderIds(storageKey) : []
+  );
+  const [preview, setPreview] = useState<FilePreviewResult | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    node: FileManagerItem;
+  } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const dragItem = useRef<{ id: string; kind: "folder" | "file" } | null>(null);
@@ -109,6 +145,7 @@ export function useFileManagerController(
   const springTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingSpringKey = useRef<string | null>(null);
   const dropDidHappen = useRef(false);
+  const previewRequest = useRef(0);
 
   selectedIdsRef.current = selectedIds;
   const viewFolderId = springFolderId !== undefined ? springFolderId : folderId;
@@ -129,6 +166,38 @@ export function useFileManagerController(
     () => getBreadcrumbs(nodes, viewFolderId),
     [nodes, viewFolderId]
   );
+
+  const pinnedFolders = useMemo(() => {
+    if (!storageKey) return [];
+    const seen = new Set<string>();
+    const pinned: FileManagerItem[] = [];
+    const recents: FileManagerItem[] = [];
+
+    for (const id of favoriteIds) {
+      if (seen.has(id)) continue;
+      const folder = getNodeById(nodes, id);
+      if (!folder || folder.kind !== "folder") continue;
+      seen.add(id);
+      pinned.push(folder);
+    }
+
+    for (const id of recentIds) {
+      if (recents.length >= MAX_RECENT_FOLDERS) break;
+      if (seen.has(id)) continue;
+      const folder = getNodeById(nodes, id);
+      if (!folder || folder.kind !== "folder") continue;
+      seen.add(id);
+      recents.push(folder);
+    }
+
+    return [...pinned, ...recents];
+  }, [favoriteIds, recentIds, nodes, storageKey]);
+
+  useEffect(() => {
+    if (!storageKey) return;
+    setFavoriteIds(getFavoriteFolderIds(storageKey));
+    setRecentIds(getRecentFolderIds(storageKey));
+  }, [storageKey]);
 
   useEffect(() => {
     const pathIds = breadcrumbs.map((folder) => folder.id);
@@ -158,6 +227,33 @@ export function useFileManagerController(
     };
   }, []);
 
+  const loadPreview = useCallback(
+    async (item: FileManagerItem): Promise<void> => {
+      if (!previewEnabled || item.kind !== "file" || !onGetPreviewUrl) {
+        setPreview(null);
+        return;
+      }
+      const requestId = ++previewRequest.current;
+      const extension = getExtension(item);
+      setIsPreviewLoading(true);
+      setPreview(null);
+      try {
+        const url = await onGetPreviewUrl(item.id);
+        if (!url) {
+          if (requestId === previewRequest.current) setPreview({ kind: "icon" });
+          return;
+        }
+        const result = await buildFilePreview(url, extension);
+        if (requestId === previewRequest.current) setPreview(result);
+      } catch {
+        if (requestId === previewRequest.current) setPreview({ kind: "icon" });
+      } finally {
+        if (requestId === previewRequest.current) setIsPreviewLoading(false);
+      }
+    },
+    [onGetPreviewUrl, previewEnabled]
+  );
+
   const clearSearch = useCallback((): void => {
     setSearchQuery("");
   }, [setSearchQuery]);
@@ -167,10 +263,23 @@ export function useFileManagerController(
       setFolderId(id);
       setSelectedNode(null);
       setSelectedIds([]);
+      setPreview(null);
       clearSearch();
+      if (id && storageKey) {
+        setRecentIds(pushRecentFolderId(storageKey, id));
+      }
       onOpenFolder?.(id);
     },
-    [clearSearch, onOpenFolder, setFolderId, setSelectedIds]
+    [clearSearch, onOpenFolder, setFolderId, setSelectedIds, storageKey]
+  );
+
+  const toggleFavorite = useCallback(
+    (event: MouseEvent, id: string): void => {
+      event.stopPropagation();
+      if (!storageKey) return;
+      setFavoriteIds(toggleFavoriteFolderId(storageKey, id));
+    },
+    [storageKey]
   );
 
   const clearHoverTimers = useCallback((): void => {
@@ -261,6 +370,9 @@ export function useFileManagerController(
       clearHoverTimers();
       setSpringFolderId(undefined);
       setFolderId(targetFolderId);
+      if (targetFolderId && storageKey) {
+        setRecentIds(pushRecentFolderId(storageKey, targetFolderId));
+      }
 
       if (event.dataTransfer.files.length) {
         await onUpload?.(Array.from(event.dataTransfer.files), targetFolderId);
@@ -280,6 +392,7 @@ export function useFileManagerController(
       await onMove?.(ids, targetFolderId);
       setSelectedIds([]);
       setSelectedNode(null);
+      setPreview(null);
     },
     [
       canManage,
@@ -287,7 +400,8 @@ export function useFileManagerController(
       onMove,
       onUpload,
       setFolderId,
-      setSelectedIds
+      setSelectedIds,
+      storageKey
     ]
   );
 
@@ -304,8 +418,7 @@ export function useFileManagerController(
   const folderDropHandlers = useCallback(
     (targetId: string | "root") => {
       const id = targetId === "root" ? null : targetId;
-      const folder =
-        targetId === "root" ? null : getNodeById(nodes, targetId);
+      const folder = targetId === "root" ? null : getNodeById(nodes, targetId);
       return folderDropTargetHandlers({
         canManage,
         targetId,
@@ -358,6 +471,7 @@ export function useFileManagerController(
         setFocusedIndex(index);
         setSelectedIds(rangeIds);
         setSelectedNode(item);
+        setPreview(null);
         return;
       }
 
@@ -372,6 +486,7 @@ export function useFileManagerController(
             : [...selectedIdsRef.current, item.id]
         );
         setSelectedNode(item);
+        setPreview(null);
         return;
       }
 
@@ -381,8 +496,9 @@ export function useFileManagerController(
       }
       setSelectedIds([item.id]);
       setSelectedNode(item);
+      void loadPreview(item);
     },
-    [items, setSelectedIds]
+    [items, loadPreview, setSelectedIds]
   );
 
   const activateItem = useCallback(
@@ -393,6 +509,99 @@ export function useFileManagerController(
     [onOpenFile, openFolder]
   );
 
+  const openContextMenu = useCallback(
+    (item: FileManagerItem, event: MouseEvent): void => {
+      event.preventDefault();
+      event.stopPropagation();
+      setContextMenu({ x: event.clientX, y: event.clientY, node: item });
+      setSelectedNode(item);
+      if (!selectedIdsRef.current.includes(item.id)) {
+        setSelectedIds([item.id]);
+      }
+    },
+    [setSelectedIds]
+  );
+
+  const resolveItemActions = useCallback(
+    (node: FileManagerItem): FileManagerAction[] => {
+      if (getItemActions) return getItemActions(node);
+      const actions: FileManagerAction[] = [];
+      if (node.kind === "file") {
+        if (onOpenFile) {
+          actions.push({
+            id: "open",
+            label: "Open",
+            onClick: () => onOpenFile(node.id)
+          });
+        }
+        if (onDownloadFile) {
+          actions.push({
+            id: "download",
+            label: "Download",
+            onClick: () => onDownloadFile(node.id)
+          });
+        }
+      } else if (onDownloadFolder) {
+        actions.push({
+          id: "download-folder",
+          label: "Download",
+          onClick: () => onDownloadFolder(node.id)
+        });
+      }
+      if (canManage && onRename) {
+        actions.push({
+          id: "rename",
+          label: "Rename",
+          onClick: () => {
+            const name = window.prompt("Rename", node.name);
+            if (name?.trim()) void onRename(node.id, name.trim());
+          }
+        });
+      }
+      if (canManage && onDelete) {
+        actions.push({
+          id: "delete",
+          label: "Delete",
+          danger: true,
+          onClick: () => onDelete([node.id])
+        });
+      }
+      return actions;
+    },
+    [
+      canManage,
+      getItemActions,
+      onDelete,
+      onDownloadFile,
+      onDownloadFolder,
+      onOpenFile,
+      onRename
+    ]
+  );
+
+  const bulkActions = useMemo((): FileManagerAction[] => {
+    if (getBulkActions) return getBulkActions(selectedIds);
+    const actions: FileManagerAction[] = [];
+    if (onOpenFile) {
+      actions.push({
+        id: "open",
+        label: "Open",
+        onClick: () => {
+          for (const id of selectedIds) onOpenFile(id);
+        }
+      });
+    }
+    if (canManage && onDelete) {
+      actions.push({
+        id: "delete",
+        label: "Delete",
+        danger: true,
+        onClick: () => onDelete(selectedIds)
+      });
+    }
+    return actions;
+  }, [canManage, getBulkActions, onDelete, onOpenFile, selectedIds]);
+
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>): void => {
       const targetEl = event.target as HTMLElement;
@@ -401,9 +610,7 @@ export function useFileManagerController(
         targetEl.tagName === "TEXTAREA" ||
         targetEl.isContentEditable
       ) {
-        if (event.key === "Escape") {
-          clearSearch();
-        }
+        if (event.key === "Escape") clearSearch();
         return;
       }
 
@@ -424,9 +631,10 @@ export function useFileManagerController(
         const focused = list[next];
         if (!focused) return;
         if (event.shiftKey) {
-          setSelectedIds(
-            idsInRange(list, selectionAnchorIndex.current, next)
-          );
+          setSelectedIds(idsInRange(list, selectionAnchorIndex.current, next));
+        } else {
+          setSelectedIds([focused.id]);
+          void loadPreview(focused);
         }
         setSelectedNode(focused);
         return;
@@ -453,6 +661,8 @@ export function useFileManagerController(
         }
         setSelectedNode(null);
         setSelectedIds([]);
+        setPreview(null);
+        setContextMenu(null);
         return;
       }
 
@@ -474,6 +684,7 @@ export function useFileManagerController(
       clearSearch,
       focusedIndex,
       items,
+      loadPreview,
       onDelete,
       searchQuery,
       selectItem,
@@ -519,6 +730,25 @@ export function useFileManagerController(
     renderPreview,
     renderActions,
     onCreateFolder,
-    onUpload
+    onCreateFile,
+    onUpload,
+    onOpenFile,
+    onDownloadFile,
+    onDownloadFolder,
+    onRename,
+    onDelete,
+    storageKey,
+    favoriteIds,
+    recentIds,
+    pinnedFolders,
+    toggleFavorite,
+    preview,
+    isPreviewLoading,
+    previewEnabled,
+    resolveItemActions,
+    bulkActions,
+    contextMenu,
+    openContextMenu,
+    closeContextMenu: () => setContextMenu(null)
   };
 }

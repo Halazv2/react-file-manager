@@ -1,6 +1,6 @@
 {
   "name": "@halazv2/react-file-manager",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Headless-ish React file browser with Finder-style spring-loaded folders and drag-and-drop.",
   "type": "module",
   "license": "MIT",
@@ -45,7 +45,13 @@
   },
   "peerDependencies": {
     "react": ">=18",
-    "react-dom": ">=18"
+    "react-dom": ">=18",
+    "pdfjs-dist": ">=4"
+  },
+  "peerDependenciesMeta": {
+    "pdfjs-dist": {
+      "optional": true
+    }
   },
   "scripts": {
     "dev": "vite",

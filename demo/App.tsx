@@ -100,11 +100,24 @@ export default function App() {
         <div className="h-[calc(640px-2.5rem)]">
           <FileManager
             nodes={nodes}
+            storageKey="demo-file-manager"
             onMove={onMove}
             onCreateFolder={onCreateFolder}
+            onCreateFile={() => notify("Create file")}
             onUpload={onUpload}
             onDelete={onDelete}
+            onRename={(id, name) => {
+              setNodes((current) => renameNode(current, id, name));
+              notify(`Renamed to ${name}`);
+            }}
+            onDownloadFile={(id) => notify(`Download ${id}`)}
+            onDownloadFolder={(id) => notify(`Download folder ${id}`)}
             onOpenFile={(id) => notify(`Open ${id}`)}
+            onGetPreviewUrl={(id) => {
+              const node = findNode(nodes, id);
+              const url = node?.meta?.previewUrl;
+              return typeof url === "string" ? url : null;
+            }}
           />
         </div>
       </div>
@@ -116,6 +129,34 @@ export default function App() {
       )}
     </div>
   );
+}
+
+function findNode(
+  nodes: FileManagerNode[],
+  id: string
+): FileManagerNode | null {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    if (node.children) {
+      const nested = findNode(node.children, id);
+      if (nested) return nested;
+    }
+  }
+  return null;
+}
+
+function renameNode(
+  nodes: FileManagerNode[],
+  id: string,
+  name: string
+): FileManagerNode[] {
+  return nodes.map((node) => {
+    if (node.id === id) return { ...node, name };
+    if (node.children) {
+      return { ...node, children: renameNode(node.children, id, name) };
+    }
+    return node;
+  });
 }
 
 function insertNode(

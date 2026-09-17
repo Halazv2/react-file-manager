@@ -20,6 +20,24 @@ export type FileManagerItem = FileManagerNode & {
 
 export type DropTargetId = string | null | "root";
 
+export interface FileManagerAction {
+  id: string;
+  label: string;
+  danger?: boolean;
+  disabled?: boolean;
+  icon?: ReactNode;
+  onClick: () => void | Promise<void>;
+}
+
+export type PreviewKind = "image" | "pdf" | "text" | "icon";
+
+export interface FilePreviewResult {
+  kind: PreviewKind;
+  url?: string;
+  text?: string;
+  pages?: number;
+}
+
 export interface FileManagerProps {
   nodes: FileManagerNode[];
   folderId?: string | null;
@@ -40,6 +58,9 @@ export interface FileManagerProps {
   showDetails?: boolean;
   springLoadDelay?: number;
   isBusy?: boolean;
+  /** localStorage key prefix for pins/recents. */
+  storageKey?: string;
+  enablePreview?: boolean;
   onMove?: (
     ids: string[],
     targetFolderId: string | null
@@ -51,8 +72,15 @@ export interface FileManagerProps {
     folderId: string | null
   ) => void | Promise<void>;
   onCreateFolder?: (parentId: string | null) => void;
+  onCreateFile?: (folderId: string | null) => void;
   onDelete?: (ids: string[]) => void;
+  onRename?: (id: string, name: string) => void | Promise<void>;
+  onDownloadFile?: (id: string) => void | Promise<void>;
+  onDownloadFolder?: (id: string) => void | Promise<void>;
+  onGetPreviewUrl?: (id: string) => string | null | Promise<string | null>;
+  getItemActions?: (node: FileManagerNode) => FileManagerAction[];
+  getBulkActions?: (ids: string[]) => FileManagerAction[];
   renderIcon?: (node: FileManagerNode) => ReactNode;
-  renderPreview?: (node: FileManagerNode | null) => ReactNode;
+  renderPreview?: (node: FileManagerItem | null) => ReactNode;
   renderActions?: (node: FileManagerNode) => ReactNode;
 }

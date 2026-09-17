@@ -1,5 +1,6 @@
 import { Browser } from "./components/Browser";
 import { DetailsPane } from "./components/DetailsPane";
+import { FileManagerContextMenu } from "./components/Item";
 import { Sidebar } from "./components/Sidebar";
 import { FileManagerContext } from "./context";
 import { cn } from "./styles";
@@ -29,6 +30,7 @@ export function FileManager(props: FileManagerProps) {
         <Sidebar />
         <Browser />
         {value.showDetails && <DetailsPane />}
+        <FileManagerContextMenu />
       </div>
     </FileManagerContext.Provider>
   );

@@ -96,3 +96,44 @@ export function UploadIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function StarIcon(props: IconProps) {
+  return (
+    <svg {...iconProps(props)}>
+      <path d="m12 3.5 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.8 7.2 18.4l.9-5.4L4.2 9.2l5.4-.8z" />
+    </svg>
+  );
+}
+
+export function StarSolidIcon(props: IconProps) {
+  return (
+    <svg
+      {...iconProps(props)}
+      fill="currentColor"
+      stroke="currentColor"
+      strokeWidth={1}
+    >
+      <path d="m12 3.5 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.8 7.2 18.4l.9-5.4L4.2 9.2l5.4-.8z" />
+    </svg>
+  );
+}
+
+export function MoreIcon(props: IconProps) {
+  return (
+    <svg {...iconProps(props)}>
+      <circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function DownloadIcon(props: IconProps) {
+  return (
+    <svg {...iconProps(props)}>
+      <path d="M12 4v10" />
+      <path d="m8 10 4 4 4-4" />
+      <path d="M5 19h14" />
+    </svg>
+  );
+}

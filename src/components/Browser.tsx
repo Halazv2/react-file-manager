@@ -3,7 +3,7 @@ import { useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { Breadcrumbs } from "./Breadcrumbs";
-import { Item } from "./Item";
+import { FileManagerBulkBar, Item } from "./Item";
 import { CardsIcon, FolderIcon, ListIcon, SearchIcon, UploadIcon } from "../icons";
 import { useFileManagerContext } from "../context";
 import { cn, FOCUS_RING, ROW_TRANSITION } from "../styles";
@@ -22,7 +22,6 @@ export function Browser() {
     viewItems,
     viewFolderId,
     folderId,
-    selectedIds,
     setView,
     setSearchQuery,
     onDropOnFolder,
@@ -97,11 +96,7 @@ export function Browser() {
           folderId={showingSpring ? viewFolderId : folderId}
           isBusy={isBusy}
         />
-        {selectedIds.length > 1 && (
-          <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-gray-900 px-4 py-1.5 text-xs text-white shadow-[0_12px_32px_rgba(15,23,42,0.35)]">
-            {selectedIds.length} selected
-          </div>
-        )}
+        <FileManagerBulkBar />
       </div>
 
       {canManage && onUpload && (
