@@ -1,6 +1,6 @@
 {
   "name": "@halazv2/react-file-manager",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Headless-ish React file browser with Finder-style spring-loaded folders and drag-and-drop.",
   "type": "module",
   "license": "MIT",
