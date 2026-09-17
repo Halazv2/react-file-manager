@@ -1,49 +1,18 @@
-import {
-  useCallback,
-  useDeferredValue,
-  useEffect,
-  useMemo,
-  useRef,
-  useState
-} from "react";
+import { createElement, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
 
 import type { FileManagerContextValue } from "./context";
 import { folderDropTargetHandlers } from "./dropTarget";
-import {
-  getFavoriteFolderIds,
-  getRecentFolderIds,
-  MAX_RECENT_FOLDERS,
-  pushRecentFolderId,
-  toggleFavoriteFolderId
-} from "./pins";
+import { StarIcon, StarSolidIcon } from "./icons";
+import { getFavoriteFolderIds, getRecentFolderIds, MAX_RECENT_FOLDERS, pushRecentFolderId, toggleFavoriteFolderId } from "./pins";
 import { buildFilePreview } from "./preview";
 import { idsInRange } from "./selection";
-import {
-  folderContainsId,
-  folderHasChildFolders,
-  getBreadcrumbs,
-  getExtension,
-  getNodeById,
-  listFolder,
-  searchNodes
-} from "./tree";
-import type {
-  DropTargetId,
-  FileManagerAction,
-  FileManagerItem,
-  FileManagerProps,
-  FileManagerView,
-  FilePreviewResult
-} from "./types";
+import { folderContainsId, folderHasChildFolders, getBreadcrumbs, getExtension, getNodeById, listFolder, searchNodes } from "./tree";
+import type { DropTargetId, FileManagerAction, FileManagerItem, FileManagerProps, FileManagerView, FilePreviewResult } from "./types";
 
 const DRAG_MIME = "application/x-file-manager-item";
 
-function useControllableState<T>(
-  controlled: T | undefined,
-  defaultValue: T,
-  onChange?: (value: T) => void
-): [T, (value: T) => void] {
+function useControllableState<T>(controlled: T | undefined, defaultValue: T, onChange?: (value: T) => void): [T, (value: T) => void] {
   const [uncontrolled, setUncontrolled] = useState(defaultValue);
   const isControlled = controlled !== undefined;
   const value = isControlled ? controlled : uncontrolled;
@@ -53,15 +22,13 @@ function useControllableState<T>(
       if (!isControlled) setUncontrolled(next);
       onChange?.(next);
     },
-    [isControlled, onChange]
+    [isControlled, onChange],
   );
 
   return [value, setValue];
 }
 
-export function useFileManagerController(
-  props: FileManagerProps
-): FileManagerContextValue {
+export function useFileManagerController(props: FileManagerProps): FileManagerContextValue {
   const {
     nodes,
     canManage = true,
@@ -86,47 +53,24 @@ export function useFileManagerController(
     getBulkActions,
     renderIcon,
     renderPreview,
-    renderActions
+    renderActions,
   } = props;
 
-  const previewEnabled =
-    enablePreview !== undefined ? enablePreview : Boolean(onGetPreviewUrl);
+  const previewEnabled = enablePreview !== undefined ? enablePreview : Boolean(onGetPreviewUrl);
 
-  const [folderId, setFolderId] = useControllableState(
-    props.folderId,
-    props.defaultFolderId ?? null,
-    props.onFolderChange
-  );
-  const [selectedIds, setSelectedIds] = useControllableState(
-    props.selectedIds,
-    props.defaultSelectedIds ?? [],
-    props.onSelectionChange
-  );
-  const [view, setView] = useControllableState<FileManagerView>(
-    props.view,
-    props.defaultView ?? "list",
-    props.onViewChange
-  );
-  const [searchQuery, setSearchQuery] = useControllableState(
-    props.searchQuery,
-    props.defaultSearchQuery ?? "",
-    props.onSearchChange
-  );
+  const [folderId, setFolderId] = useControllableState(props.folderId, props.defaultFolderId ?? null, props.onFolderChange);
+  const [selectedIds, setSelectedIds] = useControllableState(props.selectedIds, props.defaultSelectedIds ?? [], props.onSelectionChange);
+  const [view, setView] = useControllableState<FileManagerView>(props.view, props.defaultView ?? "list", props.onViewChange);
+  const [searchQuery, setSearchQuery] = useControllableState(props.searchQuery, props.defaultSearchQuery ?? "", props.onSearchChange);
 
   const deferredSearch = useDeferredValue(searchQuery);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [selectedNode, setSelectedNode] = useState<FileManagerItem | null>(null);
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [dropTargetId, setDropTargetId] = useState<DropTargetId>(null);
-  const [springFolderId, setSpringFolderId] = useState<
-    string | null | undefined
-  >(undefined);
-  const [favoriteIds, setFavoriteIds] = useState<string[]>(() =>
-    storageKey ? getFavoriteFolderIds(storageKey) : []
-  );
-  const [recentIds, setRecentIds] = useState<string[]>(() =>
-    storageKey ? getRecentFolderIds(storageKey) : []
-  );
+  const [springFolderId, setSpringFolderId] = useState<string | null | undefined>(undefined);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>(() => (storageKey ? getFavoriteFolderIds(storageKey) : []));
+  const [recentIds, setRecentIds] = useState<string[]>(() => (storageKey ? getRecentFolderIds(storageKey) : []));
   const [preview, setPreview] = useState<FilePreviewResult | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
@@ -162,10 +106,7 @@ export function useFileManagerController(
     return listFolder(nodes, springFolderId);
   }, [items, nodes, springFolderId]);
 
-  const breadcrumbs = useMemo(
-    () => getBreadcrumbs(nodes, viewFolderId),
-    [nodes, viewFolderId]
-  );
+  const breadcrumbs = useMemo(() => getBreadcrumbs(nodes, viewFolderId), [nodes, viewFolderId]);
 
   const pinnedFolders = useMemo(() => {
     if (!storageKey) return [];
@@ -251,7 +192,7 @@ export function useFileManagerController(
         if (requestId === previewRequest.current) setIsPreviewLoading(false);
       }
     },
-    [onGetPreviewUrl, previewEnabled]
+    [onGetPreviewUrl, previewEnabled],
   );
 
   const clearSearch = useCallback((): void => {
@@ -270,12 +211,20 @@ export function useFileManagerController(
       }
       onOpenFolder?.(id);
     },
-    [clearSearch, onOpenFolder, setFolderId, setSelectedIds, storageKey]
+    [clearSearch, onOpenFolder, setFolderId, setSelectedIds, storageKey],
   );
 
   const toggleFavorite = useCallback(
-    (event: MouseEvent, id: string): void => {
-      event.stopPropagation();
+    (event: MouseEvent | null, id: string): void => {
+      event?.stopPropagation();
+      if (!storageKey) return;
+      setFavoriteIds(toggleFavoriteFolderId(storageKey, id));
+    },
+    [storageKey]
+  );
+
+  const pinFolder = useCallback(
+    (id: string): void => {
       if (!storageKey) return;
       setFavoriteIds(toggleFavoriteFolderId(storageKey, id));
     },
@@ -314,14 +263,13 @@ export function useFileManagerController(
         });
       }, springLoadDelay);
     },
-    [expandedIds, springLoadDelay]
+    [expandedIds, springLoadDelay],
   );
 
   const scheduleSpringOpen = useCallback(
     (id: string | null): void => {
       if (!dragItem.current) return;
-      const currentView =
-        springFolderId !== undefined ? springFolderId : folderId;
+      const currentView = springFolderId !== undefined ? springFolderId : folderId;
       if (currentView === id) return;
       if (id !== null && dragItem.current.kind === "folder") {
         if (dragItem.current.id === id) return;
@@ -338,7 +286,7 @@ export function useFileManagerController(
         setDropTargetId(null);
       }, springLoadDelay);
     },
-    [folderId, nodes, springFolderId, springLoadDelay]
+    [folderId, nodes, springFolderId, springLoadDelay],
   );
 
   const onDragStart = useCallback(
@@ -347,10 +295,7 @@ export function useFileManagerController(
       suppressClickRef.current = true;
       dropDidHappen.current = false;
       event.dataTransfer.effectAllowed = "move";
-      event.dataTransfer.setData(
-        DRAG_MIME,
-        JSON.stringify({ id: item.id, kind: item.kind })
-      );
+      event.dataTransfer.setData(DRAG_MIME, JSON.stringify({ id: item.id, kind: item.kind }));
       event.dataTransfer.setData("text/plain", `${item.kind}:${item.id}`);
       dragItem.current = { id: item.id, kind: item.kind };
       if (!selectedIdsRef.current.includes(item.id)) {
@@ -358,7 +303,7 @@ export function useFileManagerController(
         setSelectedNode(item);
       }
     },
-    [canManage, setSelectedIds]
+    [canManage, setSelectedIds],
   );
 
   const onDropOnFolder = useCallback(
@@ -384,25 +329,14 @@ export function useFileManagerController(
       if (!dragged || !canManage) return;
 
       const currentSelected = selectedIdsRef.current;
-      const ids =
-        currentSelected.length > 1 && currentSelected.includes(dragged.id)
-          ? currentSelected
-          : [dragged.id];
+      const ids = currentSelected.length > 1 && currentSelected.includes(dragged.id) ? currentSelected : [dragged.id];
 
       await onMove?.(ids, targetFolderId);
       setSelectedIds([]);
       setSelectedNode(null);
       setPreview(null);
     },
-    [
-      canManage,
-      clearHoverTimers,
-      onMove,
-      onUpload,
-      setFolderId,
-      setSelectedIds,
-      storageKey
-    ]
+    [canManage, clearHoverTimers, onMove, onUpload, setFolderId, setSelectedIds, storageKey],
   );
 
   const onInternalDragEnd = useCallback((): void => {
@@ -430,17 +364,10 @@ export function useFileManagerController(
           }
           scheduleSpringOpen(id);
         },
-        clearExpandTimer: clearHoverTimers
+        clearExpandTimer: clearHoverTimers,
       });
     },
-    [
-      canManage,
-      clearHoverTimers,
-      nodes,
-      onDropOnFolder,
-      scheduleFolderExpand,
-      scheduleSpringOpen
-    ]
+    [canManage, clearHoverTimers, nodes, onDropOnFolder, scheduleFolderExpand, scheduleSpringOpen],
   );
 
   const toggleExpanded = useCallback((event: MouseEvent, id: string): void => {
@@ -480,11 +407,7 @@ export function useFileManagerController(
           setFocusedIndex(index);
           selectionAnchorIndex.current = index;
         }
-        setSelectedIds(
-          selectedIdsRef.current.includes(item.id)
-            ? selectedIdsRef.current.filter((id) => id !== item.id)
-            : [...selectedIdsRef.current, item.id]
-        );
+        setSelectedIds(selectedIdsRef.current.includes(item.id) ? selectedIdsRef.current.filter((id) => id !== item.id) : [...selectedIdsRef.current, item.id]);
         setSelectedNode(item);
         setPreview(null);
         return;
@@ -498,7 +421,7 @@ export function useFileManagerController(
       setSelectedNode(item);
       void loadPreview(item);
     },
-    [items, loadPreview, setSelectedIds]
+    [items, loadPreview, setSelectedIds],
   );
 
   const activateItem = useCallback(
@@ -506,7 +429,7 @@ export function useFileManagerController(
       if (item.kind === "folder") openFolder(item.id);
       else onOpenFile?.(item.id);
     },
-    [onOpenFile, openFolder]
+    [onOpenFile, openFolder],
   );
 
   const openContextMenu = useCallback(
@@ -519,63 +442,87 @@ export function useFileManagerController(
         setSelectedIds([item.id]);
       }
     },
-    [setSelectedIds]
+    [setSelectedIds],
   );
 
   const resolveItemActions = useCallback(
     (node: FileManagerItem): FileManagerAction[] => {
-      if (getItemActions) return getItemActions(node);
-      const actions: FileManagerAction[] = [];
-      if (node.kind === "file") {
-        if (onOpenFile) {
-          actions.push({
-            id: "open",
-            label: "Open",
-            onClick: () => onOpenFile(node.id)
-          });
-        }
-        if (onDownloadFile) {
-          actions.push({
-            id: "download",
-            label: "Download",
-            onClick: () => onDownloadFile(node.id)
-          });
-        }
-      } else if (onDownloadFolder) {
-        actions.push({
-          id: "download-folder",
-          label: "Download",
-          onClick: () => onDownloadFolder(node.id)
-        });
+      const hostActions = getItemActions
+        ? getItemActions(node)
+        : (() => {
+            const actions: FileManagerAction[] = [];
+            if (node.kind === "file") {
+              if (onOpenFile) {
+                actions.push({
+                  id: "open",
+                  label: "Open",
+                  onClick: () => onOpenFile(node.id)
+                });
+              }
+              if (onDownloadFile) {
+                actions.push({
+                  id: "download",
+                  label: "Download",
+                  onClick: () => onDownloadFile(node.id)
+                });
+              }
+            } else if (onDownloadFolder) {
+              actions.push({
+                id: "download-folder",
+                label: "Download",
+                onClick: () => onDownloadFolder(node.id)
+              });
+            }
+            if (canManage && onRename) {
+              actions.push({
+                id: "rename",
+                label: "Rename",
+                onClick: () => {
+                  const name = window.prompt("Rename", node.name);
+                  if (name?.trim()) void onRename(node.id, name.trim());
+                }
+              });
+            }
+            if (canManage && onDelete) {
+              actions.push({
+                id: "delete",
+                label: "Delete",
+                danger: true,
+                onClick: () => onDelete([node.id])
+              });
+            }
+            return actions;
+          })();
+
+      if (storageKey && node.kind === "folder") {
+        const isFavorite = favoriteIds.includes(node.id);
+        const withoutPin = hostActions.filter((action) => action.id !== "pin");
+        return [
+          {
+            id: "pin",
+            label: isFavorite ? "Unpin folder" : "Pin folder",
+            icon: isFavorite
+              ? createElement(StarSolidIcon, { className: "text-amber-500", size: 14 })
+              : createElement(StarIcon, { size: 14 }),
+            onClick: () => pinFolder(node.id)
+          },
+          ...withoutPin
+        ];
       }
-      if (canManage && onRename) {
-        actions.push({
-          id: "rename",
-          label: "Rename",
-          onClick: () => {
-            const name = window.prompt("Rename", node.name);
-            if (name?.trim()) void onRename(node.id, name.trim());
-          }
-        });
-      }
-      if (canManage && onDelete) {
-        actions.push({
-          id: "delete",
-          label: "Delete",
-          danger: true,
-          onClick: () => onDelete([node.id])
-        });
-      }
-      return actions;
+
+      return hostActions;
     },
     [
       canManage,
+      favoriteIds,
       getItemActions,
       onDelete,
       onDownloadFile,
       onDownloadFolder,
       onOpenFile,
-      onRename
+      onRename,
+      pinFolder,
+      storageKey
     ]
   );
 
@@ -588,7 +535,7 @@ export function useFileManagerController(
         label: "Open",
         onClick: () => {
           for (const id of selectedIds) onOpenFile(id);
-        }
+        },
       });
     }
     if (canManage && onDelete) {
@@ -596,7 +543,7 @@ export function useFileManagerController(
         id: "delete",
         label: "Delete",
         danger: true,
-        onClick: () => onDelete(selectedIds)
+        onClick: () => onDelete(selectedIds),
       });
     }
     return actions;
@@ -605,11 +552,7 @@ export function useFileManagerController(
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>): void => {
       const targetEl = event.target as HTMLElement;
-      if (
-        targetEl.tagName === "INPUT" ||
-        targetEl.tagName === "TEXTAREA" ||
-        targetEl.isContentEditable
-      ) {
+      if (targetEl.tagName === "INPUT" || targetEl.tagName === "TEXTAREA" || targetEl.isContentEditable) {
         if (event.key === "Escape") clearSearch();
         return;
       }
@@ -667,32 +610,13 @@ export function useFileManagerController(
       }
 
       if ((event.key === "Delete" || event.key === "Backspace") && canManage) {
-        const ids =
-          selectedIds.length > 0
-            ? selectedIds
-            : list[focusedIndex]
-              ? [list[focusedIndex].id]
-              : [];
+        const ids = selectedIds.length > 0 ? selectedIds : list[focusedIndex] ? [list[focusedIndex].id] : [];
         if (!ids.length) return;
         event.preventDefault();
         onDelete?.(ids);
       }
     },
-    [
-      activateItem,
-      canManage,
-      clearSearch,
-      focusedIndex,
-      items,
-      loadPreview,
-      onDelete,
-      searchQuery,
-      selectItem,
-      selectedIds,
-      setSelectedIds,
-      springFolderId,
-      viewItems
-    ]
+    [activateItem, canManage, clearSearch, focusedIndex, items, loadPreview, onDelete, searchQuery, selectItem, selectedIds, setSelectedIds, springFolderId, viewItems],
   );
 
   return {
@@ -742,6 +666,7 @@ export function useFileManagerController(
     recentIds,
     pinnedFolders,
     toggleFavorite,
+    pinFolder,
     preview,
     isPreviewLoading,
     previewEnabled,
@@ -749,6 +674,6 @@ export function useFileManagerController(
     bulkActions,
     contextMenu,
     openContextMenu,
-    closeContextMenu: () => setContextMenu(null)
+    closeContextMenu: () => setContextMenu(null),
   };
 }

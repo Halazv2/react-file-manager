@@ -25,29 +25,20 @@ const EXT_COLORS: Record<string, string> = {
   md: "#64748b",
   json: "#ca8a04",
   zip: "#a16207",
-  rar: "#a16207"
+  rar: "#a16207",
 };
 
 export function FolderTypeIcon({ size = 16, className }: IconProps) {
   return <FolderIcon size={size} className={className} />;
 }
 
-export function FileTypeIcon({
-  extension,
-  size = 16,
-  className
-}: IconProps & { extension?: string }) {
+export function FileTypeIcon({ extension, size = 16, className }: IconProps & { extension?: string }) {
   const ext = (extension || "").replace(/^\./, "").toLowerCase();
   const color = EXT_COLORS[ext] || "currentColor";
-  return (
-    <FileIcon size={size} className={className} style={{ color }} />
-  );
+  return <FileIcon size={size} className={className} style={{ color }} />;
 }
 
-export function defaultNodeIcon(
-  node: FileManagerNode,
-  size = 16
-): ReactNode {
+export function defaultNodeIcon(node: FileManagerNode, size = 16): ReactNode {
   if (node.kind === "folder") return <FolderTypeIcon size={size} />;
   return <FileTypeIcon extension={getExtension(node)} size={size} />;
 }

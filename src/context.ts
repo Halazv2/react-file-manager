@@ -55,7 +55,7 @@ export interface FileManagerContextValue {
   setView: (view: FileManagerView) => void;
   setSearchQuery: (query: string) => void;
   handleKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
-  renderIcon?: (node: FileManagerNode) => ReactNode;
+  renderIcon?: (node: FileManagerNode, size?: number) => ReactNode;
   renderPreview?: (node: FileManagerItem | null) => ReactNode;
   renderActions?: (node: FileManagerNode) => ReactNode;
   onCreateFolder?: (parentId: string | null) => void;
@@ -70,7 +70,8 @@ export interface FileManagerContextValue {
   favoriteIds: string[];
   recentIds: string[];
   pinnedFolders: FileManagerItem[];
-  toggleFavorite: (event: MouseEvent, id: string) => void;
+  toggleFavorite: (event: MouseEvent | null, id: string) => void;
+  pinFolder: (id: string) => void;
   preview: FilePreviewResult | null;
   isPreviewLoading: boolean;
   previewEnabled: boolean;

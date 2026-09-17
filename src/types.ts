@@ -80,7 +80,7 @@ export interface FileManagerProps {
   onGetPreviewUrl?: (id: string) => string | null | Promise<string | null>;
   getItemActions?: (node: FileManagerNode) => FileManagerAction[];
   getBulkActions?: (ids: string[]) => FileManagerAction[];
-  renderIcon?: (node: FileManagerNode) => ReactNode;
+  renderIcon?: (node: FileManagerNode, size?: number) => ReactNode;
   renderPreview?: (node: FileManagerItem | null) => ReactNode;
   renderActions?: (node: FileManagerNode) => ReactNode;
 }

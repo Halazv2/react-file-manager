@@ -1,8 +1,17 @@
-import type { MouseEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { createPortal } from "react-dom";
 
 import { FolderTree } from "./Item";
 import { defaultNodeIcon } from "../fileIcons";
-import { CollapseIcon, HomeIcon, StarIcon, StarSolidIcon } from "../icons";
+import {
+  CollapseIcon,
+  FileIcon,
+  FolderIcon,
+  HomeIcon,
+  PlusIcon,
+  StarIcon,
+  StarSolidIcon
+} from "../icons";
 import { useFileManagerContext } from "../context";
 import { cn, DROP_TARGET_CLASS, FOCUS_RING, ROW_TRANSITION } from "../styles";
 
@@ -21,37 +30,107 @@ export function Sidebar() {
     pinnedFolders,
     favoriteIds,
     toggleFavorite,
-    storageKey
+    storageKey,
+    renderIcon
   } = useFileManagerContext();
+
+  const [addOpen, setAddOpen] = useState(false);
+  const addButtonRef = useRef<HTMLButtonElement>(null);
+  const addMenuRef = useRef<HTMLDivElement>(null);
+  const [addPos, setAddPos] = useState({ top: 0, left: 0, width: 0 });
+
+  const canAdd = canManage && (onCreateFolder || onCreateFile);
+
+  useEffect(() => {
+    if (!addOpen || !addButtonRef.current) return;
+    const rect = addButtonRef.current.getBoundingClientRect();
+    setAddPos({ top: rect.bottom + 6, left: rect.left, width: rect.width });
+  }, [addOpen]);
+
+  useEffect(() => {
+    if (!addOpen) return;
+    const onDoc = (event: globalThis.MouseEvent) => {
+      if (
+        addMenuRef.current?.contains(event.target as Node) ||
+        addButtonRef.current?.contains(event.target as Node)
+      ) {
+        return;
+      }
+      setAddOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setAddOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [addOpen]);
 
   return (
     <aside className="flex min-h-0 flex-col gap-2 overflow-hidden border-r border-black/[0.06] bg-gray-100/80 p-3">
-      {canManage && (onCreateFolder || onCreateFile) && (
-        <div className="flex shrink-0 flex-col gap-1.5">
-          {onCreateFolder && (
-            <button
-              type="button"
-              className={cn(
-                "flex h-9 w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border-0 bg-rfm-primary text-sm font-semibold text-white hover:brightness-95",
-                FOCUS_RING
-              )}
-              onClick={() => onCreateFolder(viewFolderId)}
-            >
-              New folder
-            </button>
-          )}
-          {onCreateFile && (
-            <button
-              type="button"
-              className={cn(
-                "flex h-8 w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50",
-                FOCUS_RING
-              )}
-              onClick={() => onCreateFile(viewFolderId)}
-            >
-              New file
-            </button>
-          )}
+      {canAdd && (
+        <div className="relative shrink-0">
+          <button
+            ref={addButtonRef}
+            type="button"
+            className={cn(
+              "flex h-9 w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border-0 bg-rfm-primary text-sm font-semibold text-white hover:brightness-95",
+              FOCUS_RING
+            )}
+            aria-expanded={addOpen}
+            aria-haspopup="menu"
+            onClick={() => setAddOpen((open) => !open)}
+          >
+            <PlusIcon size={16} />
+            Add New
+          </button>
+          {addOpen &&
+            typeof document !== "undefined" &&
+            createPortal(
+              <div
+                ref={addMenuRef}
+                className="rfm-menu"
+                role="menu"
+                style={{
+                  position: "fixed",
+                  top: addPos.top,
+                  left: addPos.left,
+                  width: Math.max(addPos.width, 200),
+                  zIndex: 1100
+                }}
+              >
+                {onCreateFolder && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      onCreateFolder(viewFolderId);
+                      setAddOpen(false);
+                    }}
+                  >
+                    <FolderIcon size={16} />
+                    {viewFolderId ? "Create Folder here" : "Create Folder"}
+                  </button>
+                )}
+                {onCreateFile && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      onCreateFile(viewFolderId);
+                      setAddOpen(false);
+                    }}
+                  >
+                    <FileIcon size={16} />
+                    Upload Document
+                  </button>
+                )}
+              </div>,
+              document.body
+            )}
         </div>
       )}
 
@@ -93,11 +172,7 @@ export function Sidebar() {
                 onClick={() => openFolder(folder.id)}
                 {...folderDropHandlers(folder.id)}
               >
-                {isFavorite ? (
-                  <StarSolidIcon className="shrink-0 text-amber-500" size={14} />
-                ) : (
-                  defaultNodeIcon(folder, 14)
-                )}
+                {renderIcon?.(folder, 14) ?? defaultNodeIcon(folder, 14)}
                 <span className="truncate">{folder.name}</span>
                 <span
                   role="button"
