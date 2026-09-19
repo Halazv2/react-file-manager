@@ -1,0 +1,211 @@
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import type { ComponentProps } from "react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { FileManager } from "./FileManager";
+import { FILE_MANAGER_DRAG_MIME } from "./droppedItems";
+import type { FileManagerNode } from "./types";
+
+const nodes: FileManagerNode[] = [
+  {
+    id: "docs",
+    name: "Documents",
+    kind: "folder",
+    children: [
+      { id: "nested", name: "Nested", kind: "folder", children: [] },
+      { id: "notes", name: "notes.txt", kind: "file" }
+    ]
+  },
+  { id: "photos", name: "Photos", kind: "folder", children: [] },
+  { id: "readme", name: "README.md", kind: "file" }
+];
+
+function createDataTransfer(): DataTransfer {
+  const store = new Map<string, string>();
+  const types: string[] = [];
+  return {
+    dropEffect: "none",
+    effectAllowed: "all",
+    files: [] as unknown as FileList,
+    items: [] as unknown as DataTransferItemList,
+    types,
+    setData(format: string, data: string) {
+      store.set(format, data);
+      if (!types.includes(format)) types.push(format);
+    },
+    getData(format: string) {
+      return store.get(format) ?? "";
+    },
+    clearData() {
+      store.clear();
+      types.length = 0;
+    },
+    setDragImage() {}
+  } as DataTransfer;
+}
+
+function renderManager(props: Partial<ComponentProps<typeof FileManager>> = {}) {
+  return render(<FileManager nodes={nodes} {...props} />);
+}
+
+function folderContents() {
+  return screen.getByRole("listbox", { name: "Folder contents" });
+}
+
+function option(name: string) {
+  return within(folderContents()).getByRole("option", { name });
+}
+
+function selected(name: string) {
+  return option(name).getAttribute("aria-selected");
+}
+
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
+
+describe("FileManager characterization", () => {
+  it("selects a single item on click", async () => {
+    const user = userEvent.setup();
+    const onSelectionChange = vi.fn();
+    renderManager({ onSelectionChange });
+
+    await user.click(option("README.md"));
+
+    expect(selected("README.md")).toBe("true");
+    expect(selected("Documents")).toBe("false");
+    expect(onSelectionChange).toHaveBeenCalledWith(["readme"]);
+  });
+
+  it("shift-click selects a contiguous range", async () => {
+    const user = userEvent.setup();
+    const onSelectionChange = vi.fn();
+    renderManager({ onSelectionChange });
+
+    await user.click(option("Documents"));
+    fireEvent.click(option("README.md"), { shiftKey: true });
+
+    expect(selected("Documents")).toBe("true");
+    expect(selected("Photos")).toBe("true");
+    expect(selected("README.md")).toBe("true");
+    expect(onSelectionChange).toHaveBeenLastCalledWith(["docs", "photos", "readme"]);
+  });
+
+  it("meta/ctrl-click toggles selection", async () => {
+    const user = userEvent.setup();
+    renderManager();
+
+    await user.click(option("README.md"));
+    fireEvent.click(option("Photos"), { metaKey: true });
+
+    expect(selected("README.md")).toBe("true");
+    expect(selected("Photos")).toBe("true");
+    expect(selected("Documents")).toBe("false");
+
+    fireEvent.click(option("Photos"), { ctrlKey: true });
+    expect(selected("Photos")).toBe("false");
+    expect(selected("README.md")).toBe("true");
+  });
+
+  it("arrow keys move focus and selection", async () => {
+    const user = userEvent.setup();
+    const onSelectionChange = vi.fn();
+    renderManager({ onSelectionChange });
+
+    screen.getByLabelText("File manager").focus();
+    await user.keyboard("{ArrowDown}");
+
+    expect(selected("Documents")).toBe("true");
+    expect(onSelectionChange).toHaveBeenCalledWith(["docs"]);
+
+    await user.keyboard("{ArrowDown}");
+    expect(selected("Photos")).toBe("true");
+    expect(selected("Documents")).toBe("false");
+  });
+
+  it("Enter opens the focused folder", async () => {
+    const user = userEvent.setup();
+    const onOpenFolder = vi.fn();
+    const onFolderChange = vi.fn();
+    renderManager({ onOpenFolder, onFolderChange });
+
+    screen.getByLabelText("File manager").focus();
+    await user.keyboard("{ArrowDown}{Enter}");
+
+    expect(onOpenFolder).toHaveBeenCalledWith("docs");
+    expect(onFolderChange).toHaveBeenCalledWith("docs");
+    expect(within(folderContents()).getByRole("option", { name: "notes.txt" })).toBeTruthy();
+    expect(within(folderContents()).queryByRole("option", { name: "README.md" })).toBeNull();
+  });
+
+  it("Escape clears selection", async () => {
+    const user = userEvent.setup();
+    const onSelectionChange = vi.fn();
+    renderManager({ onSelectionChange });
+
+    await user.click(option("README.md"));
+    screen.getByLabelText("File manager").focus();
+    await user.keyboard("{Escape}");
+
+    expect(selected("README.md")).toBe("false");
+    expect(onSelectionChange).toHaveBeenLastCalledWith([]);
+  });
+
+  it("Delete invokes onDelete for the selection", async () => {
+    const user = userEvent.setup();
+    const onDelete = vi.fn();
+    renderManager({ onDelete });
+
+    await user.click(option("README.md"));
+    screen.getByLabelText("File manager").focus();
+    await user.keyboard("{Delete}");
+
+    expect(onDelete).toHaveBeenCalledWith(["readme"]);
+  });
+
+  it("filters the list by search query", async () => {
+    const user = userEvent.setup();
+    const onSearchChange = vi.fn();
+    renderManager({ onSearchChange });
+
+    await user.type(screen.getByRole("searchbox", { name: "Search files" }), "notes");
+
+    expect(onSearchChange).toHaveBeenLastCalledWith("notes");
+    expect(await within(folderContents()).findByRole("option", { name: "notes.txt" })).toBeTruthy();
+    expect(within(folderContents()).queryByRole("option", { name: "README.md" })).toBeNull();
+  });
+
+  it("invokes onMove when an item is dropped onto a folder", () => {
+    const onMove = vi.fn();
+    renderManager({ onMove });
+
+    const dataTransfer = createDataTransfer();
+    fireEvent.dragStart(option("README.md"), { dataTransfer });
+    expect(dataTransfer.getData(FILE_MANAGER_DRAG_MIME)).toContain("readme");
+
+    fireEvent.drop(option("Photos"), { dataTransfer });
+
+    expect(onMove).toHaveBeenCalledWith(["readme"], "photos");
+  });
+
+  it("spring-loads a folder after hover delay while dragging", async () => {
+    vi.useFakeTimers();
+    const onFolderChange = vi.fn();
+    renderManager({ springLoadDelay: 500, onFolderChange });
+
+    const dataTransfer = createDataTransfer();
+    fireEvent.dragStart(option("README.md"), { dataTransfer });
+    fireEvent.dragEnter(option("Documents"), { dataTransfer });
+
+    expect(within(folderContents()).queryByRole("option", { name: "notes.txt" })).toBeNull();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+
+    expect(within(folderContents()).getByRole("option", { name: "notes.txt" })).toBeTruthy();
+    expect(onFolderChange).not.toHaveBeenCalled();
+  });
+});
