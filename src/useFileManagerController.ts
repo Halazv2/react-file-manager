@@ -1,8 +1,9 @@
-import { createElement, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { createElement, useCallback, useDeferredValue, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
 
 import type { FileManagerContextValue } from "./context";
 import { FILE_MANAGER_DRAG_MIME, isInternalFileManagerDrag, planExternalDrop, readDataTransferItems } from "./droppedItems";
+import { DND_IDLE, dndReducer, isDndActive } from "./dndMachine";
 import { folderDropTargetHandlers } from "./dropTarget";
 import { StarIcon, StarSolidIcon } from "./icons";
 import { getFavoriteFolderIds, getRecentFolderIds, MAX_RECENT_FOLDERS, pushRecentFolderId, toggleFavoriteFolderId } from "./pins";
@@ -83,7 +84,8 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const dragItem = useRef<{ id: string; kind: "folder" | "file" } | null>(null);
+  const [dnd, dispatchDnd] = useReducer(dndReducer, DND_IDLE);
+  const dndRef = useRef(dnd);
   const selectedIdsRef = useRef<string[]>([]);
   const suppressClickRef = useRef(false);
   const selectionAnchorIndex = useRef(0);
@@ -96,6 +98,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
   const [pendingOperation, setPendingOperation] = useState<string | null>(null);
 
   selectedIdsRef.current = selectedIds;
+  dndRef.current = dnd;
   const treeIndex = useMemo(() => buildTreeIndex(nodes), [nodes]);
   const viewFolderId = springFolderId !== undefined ? springFolderId : folderId;
 
@@ -322,8 +325,11 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
   const scheduleFolderExpand = useCallback(
     (id: string): void => {
       if (expandedIds.has(id)) return;
-      if (dragItem.current?.kind === "folder" && dragItem.current.id === id) {
-        return;
+      const drag = dndRef.current;
+      if (drag.status === "dragging" || drag.status === "hovering" || drag.status === "springOpen") {
+        if (drag.kind === "folder" && drag.primaryId === id) {
+          return;
+        }
       }
       if (pendingExpandId.current === id) return;
       if (dragExpandTimer.current) clearTimeout(dragExpandTimer.current);
@@ -343,20 +349,23 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
 
   const scheduleSpringOpen = useCallback(
     (id: string | null): void => {
-      if (!dragItem.current) return;
+      const session = dndRef.current;
+      if (session.status === "idle" || session.status === "cancelled" || session.status === "dropped") return;
       const currentView = springFolderId !== undefined ? springFolderId : folderId;
       if (currentView === id) return;
-      if (id !== null && dragItem.current.kind === "folder") {
-        if (dragItem.current.id === id) return;
-        const dragged = getIndexedNode(treeIndex, dragItem.current.id);
+      if (id !== null && session.kind === "folder") {
+        if (session.primaryId === id) return;
+        const dragged = getIndexedNode(treeIndex, session.primaryId);
         if (dragged && folderContainsIdInIndex(treeIndex, dragged.id, id)) return;
       }
+      dispatchDnd({ type: "HOVER", targetId: id });
       const key = id === null ? "root" : `folder-${id}`;
       if (pendingSpringKey.current === key) return;
       if (springTimer.current) clearTimeout(springTimer.current);
       pendingSpringKey.current = key;
       springTimer.current = setTimeout(() => {
         pendingSpringKey.current = null;
+        dispatchDnd({ type: "SPRING_OPEN" });
         setSpringFolderId(id);
         setDropTargetId(null);
       }, springLoadDelay);
@@ -369,10 +378,10 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
       if (!canManage) return;
       suppressClickRef.current = true;
       dropDidHappen.current = false;
+      dispatchDnd({ type: "START", id: item.id, kind: item.kind, selectedIds: selectedIdsRef.current });
       event.dataTransfer.effectAllowed = "move";
       event.dataTransfer.setData(FILE_MANAGER_DRAG_MIME, JSON.stringify({ id: item.id, kind: item.kind }));
       event.dataTransfer.setData("text/plain", `${item.kind}:${item.id}`);
-      dragItem.current = { id: item.id, kind: item.kind };
       if (!selectedIdsRef.current.includes(item.id)) {
         setSelectedIds([item.id]);
         setSelectedNode(item);
@@ -399,9 +408,10 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
 
       const rollbackSpring = (): void => {
         setSpringFolderId(undefined);
+        dispatchDnd({ type: "RESET" });
       };
 
-      const isInternal = Boolean(dragItem.current) || isInternalFileManagerDrag(event.dataTransfer);
+      const isInternal = isDndActive(dndRef.current) || dndRef.current.status === "dropped" || isInternalFileManagerDrag(event.dataTransfer);
       if (!isInternal) {
         if (!canManage) {
           rollbackSpring();
@@ -415,20 +425,26 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
         } else if (plan.action === "upload") {
           ok = await runHostOperation("upload", () => onUpload?.(plan.files, targetFolderId));
         }
-        if (ok) commitDrop();
+        if (ok) {
+          commitDrop();
+          dispatchDnd({ type: "RESET" });
+        }
         else rollbackSpring();
         return;
       }
 
-      const dragged = dragItem.current;
-      dragItem.current = null;
+      const session = dndRef.current;
+      const dragged =
+        session.status === "dragging" || session.status === "hovering" || session.status === "springOpen"
+          ? session
+          : null;
+      dispatchDnd({ type: "DROP", targetId: targetFolderId });
       if (!dragged || !canManage) {
         rollbackSpring();
         return;
       }
 
-      const currentSelected = selectedIdsRef.current;
-      const ids = currentSelected.length > 1 && currentSelected.includes(dragged.id) ? currentSelected : [dragged.id];
+      const ids = dragged.ids;
 
       const ok = await runHostOperation("move", onMove ? () => onMove(ids, targetFolderId) : undefined);
       if (!ok) {
@@ -439,6 +455,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
       setSelectedIds([]);
       setSelectedNode(null);
       setPreview(null);
+      dispatchDnd({ type: "RESET" });
     },
     [canManage, clearHoverTimers, onImport, onMove, onUpload, runHostOperation, setFolderId, setSelectedIds, storageKey],
   );
@@ -446,11 +463,13 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
   const onInternalDragEnd = useCallback((): void => {
     clearHoverTimers();
     setDropTargetId(null);
-    if (!dropDidHappen.current) {
+    const ended = dndReducer(dndRef.current, { type: "END" });
+    dispatchDnd({ type: "END" });
+    if (ended.status !== "dropped" && dndRef.current.status !== "dropped") {
       setSpringFolderId(undefined);
+      dispatchDnd({ type: "RESET" });
     }
     dropDidHappen.current = false;
-    dragItem.current = null;
   }, [clearHoverTimers]);
 
   const folderDropHandlers = useCallback(
