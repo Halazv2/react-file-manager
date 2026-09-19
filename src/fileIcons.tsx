@@ -3,8 +3,12 @@ import type { ReactNode, SVGAttributes } from "react";
 import { getExtension } from "./tree";
 import type { FileManagerNode } from "./types";
 
-interface FileTypeIconProps extends SVGAttributes<SVGSVGElement> {
+export interface FileTypeIconProps extends SVGAttributes<SVGSVGElement> {
   extension?: string;
+  size?: number;
+}
+
+export interface FolderTypeIconProps extends SVGAttributes<SVGSVGElement> {
   size?: number;
 }
 
@@ -109,8 +113,10 @@ const FILE_FAMILIES: Record<string, { accent: string; label: string }> = {
   apk: { accent: "#3DDC84", label: "APK" }, // Android Green
   sh: { accent: "#4E5D6C", label: "SH" }, // Terminal Slate
 };
+
 export function FileTypeIcon({ extension, size = 40, ...props }: FileTypeIconProps) {
-  const family = FILE_FAMILIES[extension?.toLowerCase() || ""] || {
+  const normalizedExtension = extension?.replace(/^\./, "").toLowerCase() || "";
+  const family = FILE_FAMILIES[normalizedExtension] || {
     accent: "#155EEF",
     label: (extension || "FILE").slice(0, 4).toUpperCase(),
   };
@@ -125,14 +131,12 @@ export function FileTypeIcon({ extension, size = 40, ...props }: FileTypeIconPro
       />
       <path stroke='#D5D7DA' strokeWidth={1.5} d='M27 .5V8a4 4 0 0 0 4 4h7.5' />
       <rect width={33} height={16} x={1} y={18} fill={family.accent} rx={2} />
-      <text x='17.5' y='28.2' fill='#fff' fontFamily='Arial, sans-serif' fontSize={fontSize} fontWeight='700' textAnchor='middle'>
-        {family.label}
-      </text>
+      <text x='17.5' y='28.2' fill='#fff' fontFamily='Arial, sans-serif' fontSize={fontSize} fontWeight='700' textAnchor='middle'>{family.label}</text>
     </svg>
   );
 }
 
-export function FolderTypeIcon({ size = 40, ...props }: { size?: number } & SVGAttributes<SVGSVGElement>) {
+export function FolderTypeIcon({ size = 40, ...props }: FolderTypeIconProps) {
   return (
     <svg width={size} height={size} fill='none' viewBox='0 0 40 40' aria-hidden='true' {...props}>
       <path fill='#E8B931' d='M4 11.5C4 9.567 5.567 8 7.5 8H16l2.4 2.4c.375.375.883.6 1.414.6H32.5C34.433 11 36 12.567 36 14.5V15H4v-3.5Z' />

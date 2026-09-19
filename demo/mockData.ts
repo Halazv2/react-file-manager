@@ -16,9 +16,9 @@ export const initialNodes: FileManagerNode[] = [
             id: "msa",
             name: "Master Service Agreement.pdf",
             kind: "file",
-            extension: "pdf"
-          }
-        ]
+            extension: "pdf",
+          },
+        ],
       },
       {
         id: "notes",
@@ -26,11 +26,11 @@ export const initialNodes: FileManagerNode[] = [
         kind: "folder",
         children: [
           { id: "todo", name: "todo.md", kind: "file", extension: "md" },
-          { id: "ideas", name: "ideas.txt", kind: "file", extension: "txt" }
-        ]
+          { id: "ideas", name: "ideas.txt", kind: "file", extension: "txt" },
+        ],
       },
-      { id: "invoice", name: "invoice-april.xlsx", kind: "file", extension: "xlsx" }
-    ]
+      { id: "invoice", name: "invoice-april.xlsx", kind: "file", extension: "xlsx" },
+    ],
   },
   {
     id: "photos",
@@ -43,11 +43,11 @@ export const initialNodes: FileManagerNode[] = [
         kind: "folder",
         children: [
           { id: "beach", name: "beach.jpg", kind: "file", extension: "jpg" },
-          { id: "hike", name: "hike.png", kind: "file", extension: "png" }
-        ]
+          { id: "hike", name: "hike.png", kind: "file", extension: "png" },
+        ],
       },
-      { id: "headshot", name: "headshot.jpg", kind: "file", extension: "jpg" }
-    ]
+      { id: "headshot", name: "headshot.jpg", kind: "file", extension: "jpg" },
+    ],
   },
   {
     id: "projects",
@@ -64,11 +64,15 @@ export const initialNodes: FileManagerNode[] = [
             id: "package-json",
             name: "package.json",
             kind: "file",
-            extension: "json"
-          }
-        ]
-      }
-    ]
+            extension: "json",
+          },
+          { id: "source", name: "FileTypeIcon.tsx", kind: "file", extension: "tsx" },
+          { id: "release", name: "release-notes.zip", kind: "file", extension: "zip" },
+          { id: "walkthrough", name: "walkthrough.mp4", kind: "file", extension: "mp4" },
+          { id: "theme", name: "theme-song.mp3", kind: "file", extension: "mp3" },
+        ],
+      },
+    ],
   },
-  { id: "desktop-note", name: "Getting started.txt", kind: "file", extension: "txt" }
+  { id: "desktop-note", name: "Getting started.txt", kind: "file", extension: "txt" },
 ];
