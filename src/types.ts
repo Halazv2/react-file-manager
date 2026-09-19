@@ -114,4 +114,5 @@ export interface FileManagerProps {
   renderIcon?: (node: FileManagerNode, size?: number) => ReactNode;
   renderPreview?: (node: FileManagerItem | null) => ReactNode;
   renderActions?: (node: FileManagerNode) => ReactNode;
+  onError?: (error: unknown, context: { operation: string }) => void;
 }

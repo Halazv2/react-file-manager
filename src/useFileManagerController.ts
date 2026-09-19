@@ -54,6 +54,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     renderIcon,
     renderPreview,
     renderActions,
+    onError,
   } = props;
 
   const previewEnabled = enablePreview !== undefined ? enablePreview : Boolean(onGetPreviewUrl);
@@ -91,6 +92,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
   const pendingSpringKey = useRef<string | null>(null);
   const dropDidHappen = useRef(false);
   const previewRequest = useRef(0);
+  const [pendingOperation, setPendingOperation] = useState<string | null>(null);
 
   selectedIdsRef.current = selectedIds;
   const viewFolderId = springFolderId !== undefined ? springFolderId : folderId;
@@ -245,6 +247,58 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     pendingSpringKey.current = null;
   }, []);
 
+  const runHostOperation = useCallback(
+    async (operation: string, task?: () => void | Promise<void>): Promise<boolean> => {
+      if (!task) return true;
+      setPendingOperation(operation);
+      try {
+        await task();
+        return true;
+      } catch (error) {
+        onError?.(error, { operation });
+        return false;
+      } finally {
+        setPendingOperation(null);
+      }
+    },
+    [onError],
+  );
+
+  const handleUpload = useCallback(
+    (files: File[], folderId: string | null) => {
+      void runHostOperation("upload", onUpload ? () => onUpload(files, folderId) : undefined);
+    },
+    [onUpload, runHostOperation],
+  );
+
+  const handleDelete = useCallback(
+    (ids: string[]) => {
+      void runHostOperation("delete", onDelete ? () => onDelete(ids) : undefined);
+    },
+    [onDelete, runHostOperation],
+  );
+
+  const handleRename = useCallback(
+    (id: string, name: string) => {
+      void runHostOperation("rename", onRename ? () => onRename(id, name) : undefined);
+    },
+    [onRename, runHostOperation],
+  );
+
+  const handleDownloadFile = useCallback(
+    (id: string) => {
+      void runHostOperation("downloadFile", onDownloadFile ? () => onDownloadFile(id) : undefined);
+    },
+    [onDownloadFile, runHostOperation],
+  );
+
+  const handleDownloadFolder = useCallback(
+    (id: string) => {
+      void runHostOperation("downloadFolder", onDownloadFolder ? () => onDownloadFolder(id) : undefined);
+    },
+    [onDownloadFolder, runHostOperation],
+  );
+
   const scheduleFolderExpand = useCallback(
     (id: string): void => {
       if (expandedIds.has(id)) return;
@@ -314,38 +368,59 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
       dropDidHappen.current = true;
       setDropTargetId(null);
       clearHoverTimers();
-      setSpringFolderId(undefined);
-      setFolderId(targetFolderId);
-      if (targetFolderId && storageKey) {
-        setRecentIds(pushRecentFolderId(storageKey, targetFolderId));
-      }
+
+      const commitDrop = (): void => {
+        setSpringFolderId(undefined);
+        setFolderId(targetFolderId);
+        if (targetFolderId && storageKey) {
+          setRecentIds(pushRecentFolderId(storageKey, targetFolderId));
+        }
+      };
+
+      const rollbackSpring = (): void => {
+        setSpringFolderId(undefined);
+      };
 
       const isInternal = Boolean(dragItem.current) || isInternalFileManagerDrag(event.dataTransfer);
       if (!isInternal) {
-        if (!canManage) return;
+        if (!canManage) {
+          rollbackSpring();
+          return;
+        }
         const dropped = await readDataTransferItems(event.dataTransfer);
         const plan = planExternalDrop(dropped, Boolean(onImport));
+        let ok = true;
         if (plan.action === "import") {
-          await onImport?.(plan.items, targetFolderId);
+          ok = await runHostOperation("import", () => onImport?.(plan.items, targetFolderId));
         } else if (plan.action === "upload") {
-          await onUpload?.(plan.files, targetFolderId);
+          ok = await runHostOperation("upload", () => onUpload?.(plan.files, targetFolderId));
         }
+        if (ok) commitDrop();
+        else rollbackSpring();
         return;
       }
 
       const dragged = dragItem.current;
       dragItem.current = null;
-      if (!dragged || !canManage) return;
+      if (!dragged || !canManage) {
+        rollbackSpring();
+        return;
+      }
 
       const currentSelected = selectedIdsRef.current;
       const ids = currentSelected.length > 1 && currentSelected.includes(dragged.id) ? currentSelected : [dragged.id];
 
-      await onMove?.(ids, targetFolderId);
+      const ok = await runHostOperation("move", onMove ? () => onMove(ids, targetFolderId) : undefined);
+      if (!ok) {
+        rollbackSpring();
+        return;
+      }
+      commitDrop();
       setSelectedIds([]);
       setSelectedNode(null);
       setPreview(null);
     },
-    [canManage, clearHoverTimers, onImport, onMove, onUpload, setFolderId, setSelectedIds, storageKey],
+    [canManage, clearHoverTimers, onImport, onMove, onUpload, runHostOperation, setFolderId, setSelectedIds, storageKey],
   );
 
   const onInternalDragEnd = useCallback((): void => {
@@ -472,14 +547,14 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
                 actions.push({
                   id: "download",
                   label: "Download",
-                  onClick: () => onDownloadFile(node.id)
+                  onClick: () => handleDownloadFile(node.id)
                 });
               }
             } else if (onDownloadFolder) {
               actions.push({
                 id: "download-folder",
                 label: "Download",
-                onClick: () => onDownloadFolder(node.id)
+                onClick: () => handleDownloadFolder(node.id)
               });
             }
             if (canManage && onRename) {
@@ -488,7 +563,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
                 label: "Rename",
                 onClick: () => {
                   const name = window.prompt("Rename", node.name);
-                  if (name?.trim()) void onRename(node.id, name.trim());
+                  if (name?.trim()) handleRename(node.id, name.trim());
                 }
               });
             }
@@ -497,7 +572,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
                 id: "delete",
                 label: "Delete",
                 danger: true,
-                onClick: () => onDelete([node.id])
+                onClick: () => handleDelete([node.id])
               });
             }
             return actions;
@@ -525,9 +600,10 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
       canManage,
       favoriteIds,
       getItemActions,
-      onDelete,
-      onDownloadFile,
-      onDownloadFolder,
+      handleDelete,
+      handleDownloadFile,
+      handleDownloadFolder,
+      handleRename,
       onOpenFile,
       onRename,
       pinFolder,
@@ -552,11 +628,11 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
         id: "delete",
         label: "Delete",
         danger: true,
-        onClick: () => onDelete(selectedIds),
+        onClick: () => handleDelete(selectedIds),
       });
     }
     return actions;
-  }, [canManage, getBulkActions, onDelete, onOpenFile, selectedIds]);
+  }, [canManage, getBulkActions, handleDelete, onDelete, onOpenFile, selectedIds]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>): void => {
@@ -622,10 +698,10 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
         const ids = selectedIds.length > 0 ? selectedIds : list[focusedIndex] ? [list[focusedIndex].id] : [];
         if (!ids.length) return;
         event.preventDefault();
-        onDelete?.(ids);
+        handleDelete(ids);
       }
     },
-    [activateItem, canManage, clearSearch, focusedIndex, items, loadPreview, onDelete, searchQuery, selectItem, selectedIds, setSelectedIds, springFolderId, viewItems],
+    [activateItem, canManage, clearSearch, focusedIndex, handleDelete, items, loadPreview, searchQuery, selectItem, selectedIds, setSelectedIds, springFolderId, viewItems],
   );
 
   return {
@@ -641,7 +717,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     searchQuery,
     canManage,
     rootLabel,
-    isBusy,
+    isBusy: isBusy || pendingOperation !== null,
     items,
     viewItems,
     breadcrumbs,
@@ -664,12 +740,12 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     renderActions,
     onCreateFolder,
     onCreateFile,
-    onUpload,
+    onUpload: handleUpload,
     onOpenFile,
-    onDownloadFile,
-    onDownloadFolder,
-    onRename,
-    onDelete,
+    onDownloadFile: handleDownloadFile,
+    onDownloadFolder: handleDownloadFolder,
+    onRename: handleRename,
+    onDelete: handleDelete,
     storageKey,
     favoriteIds,
     recentIds,

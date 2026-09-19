@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -177,7 +177,7 @@ describe("FileManager characterization", () => {
     expect(within(folderContents()).queryByRole("option", { name: "README.md" })).toBeNull();
   });
 
-  it("invokes onMove when an item is dropped onto a folder", () => {
+  it("invokes onMove when an item is dropped onto a folder", async () => {
     const onMove = vi.fn();
     renderManager({ onMove });
 
@@ -187,7 +187,26 @@ describe("FileManager characterization", () => {
 
     fireEvent.drop(option("Photos"), { dataTransfer });
 
-    expect(onMove).toHaveBeenCalledWith(["readme"], "photos");
+    await waitFor(() => {
+      expect(onMove).toHaveBeenCalledWith(["readme"], "photos");
+    });
+  });
+
+  it("reports rejected onMove via onError and does not look like success", async () => {
+    const onError = vi.fn();
+    const onMove = vi.fn().mockRejectedValue(new Error("nope"));
+    const onFolderChange = vi.fn();
+    renderManager({ onMove, onError, onFolderChange });
+
+    const dataTransfer = createDataTransfer();
+    fireEvent.dragStart(option("README.md"), { dataTransfer });
+    fireEvent.drop(option("Photos"), { dataTransfer });
+
+    await waitFor(() => {
+      expect(onError).toHaveBeenCalledWith(expect.any(Error), { operation: "move" });
+    });
+    expect(onFolderChange).not.toHaveBeenCalled();
+    expect(option("README.md").getAttribute("aria-selected")).toBe("true");
   });
 
   it("spring-loads a folder after hover delay while dragging", async () => {
