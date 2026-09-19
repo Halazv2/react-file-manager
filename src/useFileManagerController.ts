@@ -80,6 +80,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
   } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const dragItem = useRef<{ id: string; kind: "folder" | "file" } | null>(null);
   const selectedIdsRef = useRef<string[]>([]);
   const suppressClickRef = useRef(false);
@@ -510,7 +511,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
             id: "pin",
             label: isFavorite ? "Unpin folder" : "Pin folder",
             icon: isFavorite
-              ? createElement(StarSolidIcon, { className: "text-amber-500", size: 14 })
+              ? createElement(StarSolidIcon, { className: "rfm-star", size: 14 })
               : createElement(StarIcon, { size: 14 }),
             onClick: () => pinFolder(node.id)
           },
@@ -683,5 +684,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     contextMenu,
     openContextMenu,
     closeContextMenu: () => setContextMenu(null),
+    classNames: props.classNames,
+    rootRef,
   };
 }

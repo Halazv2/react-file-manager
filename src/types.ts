@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import type { FileManagerDropItem } from "./droppedItems";
 
@@ -7,6 +7,8 @@ export type { FileManagerDropItem };
 export type FileManagerKind = "folder" | "file";
 
 export type FileManagerView = "list" | "cards";
+
+export type FileManagerTheme = "light" | "dark";
 
 export interface FileManagerNode {
   id: string;
@@ -42,6 +44,23 @@ export interface FilePreviewResult {
   pages?: number;
 }
 
+export interface FileManagerClassNames {
+  root?: string;
+  layout?: string;
+  sidebar?: string;
+  browser?: string;
+  details?: string;
+  item?: string;
+  treeRow?: string;
+  toolbar?: string;
+  search?: string;
+  menu?: string;
+  more?: string;
+  bulkBar?: string;
+  iconButton?: string;
+  viewToggle?: string;
+}
+
 export interface FileManagerProps {
   nodes: FileManagerNode[];
   folderId?: string | null;
@@ -59,6 +78,9 @@ export interface FileManagerProps {
   canManage?: boolean;
   rootLabel?: string;
   className?: string;
+  style?: CSSProperties;
+  theme?: FileManagerTheme;
+  classNames?: FileManagerClassNames;
   showDetails?: boolean;
   springLoadDelay?: number;
   isBusy?: boolean;

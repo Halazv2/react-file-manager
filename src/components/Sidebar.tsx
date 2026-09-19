@@ -13,7 +13,7 @@ import {
   StarSolidIcon
 } from "../icons";
 import { useFileManagerContext } from "../context";
-import { cn, DROP_TARGET_CLASS, FOCUS_RING, ROW_TRANSITION } from "../styles";
+import { cn } from "../styles";
 
 export function Sidebar() {
   const {
@@ -31,7 +31,9 @@ export function Sidebar() {
     favoriteIds,
     toggleFavorite,
     storageKey,
-    renderIcon
+    renderIcon,
+    rootRef,
+    classNames
   } = useFileManagerContext();
 
   const [addOpen, setAddOpen] = useState(false);
@@ -69,17 +71,16 @@ export function Sidebar() {
     };
   }, [addOpen]);
 
+  const portalTarget = rootRef.current ?? (typeof document !== "undefined" ? document.body : null);
+
   return (
-    <aside className="flex min-h-0 flex-col gap-2 overflow-hidden border-r border-black/[0.06] bg-gray-100/80 p-3">
+    <aside className={cn("rfm-sidebar", classNames?.sidebar)}>
       {canAdd && (
-        <div className="relative shrink-0">
+        <div>
           <button
             ref={addButtonRef}
             type="button"
-            className={cn(
-              "flex h-9 w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border-0 bg-rfm-primary text-sm font-semibold text-white hover:brightness-95",
-              FOCUS_RING
-            )}
+            className="rfm-add-button"
             aria-expanded={addOpen}
             aria-haspopup="menu"
             onClick={() => setAddOpen((open) => !open)}
@@ -88,11 +89,11 @@ export function Sidebar() {
             Add New
           </button>
           {addOpen &&
-            typeof document !== "undefined" &&
+            portalTarget &&
             createPortal(
               <div
                 ref={addMenuRef}
-                className="rfm-menu"
+                className={cn("rfm-menu", classNames?.menu)}
                 role="menu"
                 style={{
                   position: "fixed",
@@ -106,6 +107,7 @@ export function Sidebar() {
                   <button
                     type="button"
                     role="menuitem"
+                    className="rfm-menu-item"
                     onClick={() => {
                       onCreateFolder(viewFolderId);
                       setAddOpen(false);
@@ -119,6 +121,7 @@ export function Sidebar() {
                   <button
                     type="button"
                     role="menuitem"
+                    className="rfm-menu-item"
                     onClick={() => {
                       onCreateFile(viewFolderId);
                       setAddOpen(false);
@@ -129,55 +132,41 @@ export function Sidebar() {
                   </button>
                 )}
               </div>,
-              document.body
+              portalTarget
             )}
         </div>
       )}
 
-      <div className="flex shrink-0 justify-end">
-        <button
-          type="button"
-          className={cn(
-            "inline-flex cursor-pointer items-center gap-1 rounded-md border-0 bg-transparent px-1.5 py-1 text-[11px] font-semibold text-gray-500 hover:bg-black/5 hover:text-gray-900",
-            ROW_TRANSITION,
-            FOCUS_RING
-          )}
-          onClick={collapseAll}
-        >
+      <div className="rfm-toolbar-actions" style={{ justifyContent: "flex-end", width: "100%" }}>
+        <button type="button" className="rfm-collapse-all" onClick={collapseAll}>
           <CollapseIcon size={14} />
           Collapse all
         </button>
       </div>
 
       {storageKey && pinnedFolders.length > 0 && (
-        <div className="mb-1 flex shrink-0 flex-col gap-0.5 border-b border-black/[0.06] pb-2">
-          <div className="px-1.5 pb-1 text-[11px] font-semibold tracking-[0.04em] text-gray-500 uppercase">
-            Pinned & recent
-          </div>
+        <div className="rfm-pins">
+          <div className="rfm-pins-label">Pinned & recent</div>
           {pinnedFolders.map((folder) => {
             const isFavorite = favoriteIds.includes(folder.id);
+            const isCurrent = viewFolderId === folder.id;
+            const isDrop = dropTargetId === folder.id;
             return (
               <button
                 key={`pin-${folder.id}`}
                 type="button"
-                className={cn(
-                  "flex w-full cursor-pointer items-center gap-1.5 rounded-md border-0 bg-transparent px-1.5 py-[5px] text-left text-xs",
-                  viewFolderId === folder.id
-                    ? "bg-rfm-hover text-rfm-primary"
-                    : "text-gray-900 hover:bg-rfm-hover hover:text-rfm-primary",
-                  dropTargetId === folder.id ? DROP_TARGET_CLASS : "",
-                  ROW_TRANSITION,
-                  FOCUS_RING
-                )}
+                className="rfm-pin-row"
+                aria-current={isCurrent || undefined}
+                data-drop-target={isDrop || undefined}
                 onClick={() => openFolder(folder.id)}
                 {...folderDropHandlers(folder.id)}
               >
                 {renderIcon?.(folder, 14) ?? defaultNodeIcon(folder, 14)}
-                <span className="truncate">{folder.name}</span>
+                <span className="rfm-item-name">{folder.name}</span>
                 <span
                   role="button"
                   tabIndex={0}
-                  className="ml-auto inline-flex text-gray-400 hover:text-amber-500"
+                  className="rfm-pin-toggle"
                   aria-label={isFavorite ? "Unpin" : "Pin"}
                   onClick={(event) => toggleFavorite(event, folder.id)}
                   onKeyDown={(event) => {
@@ -187,7 +176,7 @@ export function Sidebar() {
                   }}
                 >
                   {isFavorite ? (
-                    <StarSolidIcon className="text-amber-500" size={14} />
+                    <StarSolidIcon className="rfm-star" size={14} />
                   ) : (
                     <StarIcon size={14} />
                   )}
@@ -198,25 +187,18 @@ export function Sidebar() {
         </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div className="rfm-sidebar-scroll">
         <button
           type="button"
-          className={cn(
-            "flex w-full cursor-pointer items-center gap-1 rounded-md border-0 bg-transparent py-1 text-left text-[13px]",
-            viewFolderId === null
-              ? "bg-rfm-hover font-semibold text-rfm-primary"
-              : "text-gray-900 hover:bg-black/[0.04]",
-            dropTargetId === "root" ? DROP_TARGET_CLASS : "",
-            ROW_TRANSITION,
-            FOCUS_RING
-          )}
-          style={{ paddingLeft: 8 }}
+          className="rfm-home-row"
+          aria-current={viewFolderId === null || undefined}
+          data-drop-target={dropTargetId === "root" || undefined}
           onClick={() => openFolder(null)}
           {...folderDropHandlers("root")}
         >
-          <span className="invisible inline-block h-[18px] w-[18px] shrink-0" />
-          <HomeIcon className="h-4 w-4 shrink-0" size={16} />
-          <span className="min-w-0 flex-1 truncate">{rootLabel}</span>
+          <span className="rfm-tree-chevron" style={{ visibility: "hidden" }} />
+          <HomeIcon size={16} />
+          <span className="rfm-item-name">{rootLabel}</span>
         </button>
         <div role="tree">
           <FolderTree folders={nodes} />

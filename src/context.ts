@@ -10,6 +10,7 @@ import type {
 import type {
   DropTargetId,
   FileManagerAction,
+  FileManagerClassNames,
   FileManagerItem,
   FileManagerNode,
   FileManagerView,
@@ -80,6 +81,8 @@ export interface FileManagerContextValue {
   contextMenu: { x: number; y: number; node: FileManagerItem } | null;
   openContextMenu: (node: FileManagerItem, event: MouseEvent) => void;
   closeContextMenu: () => void;
+  classNames?: FileManagerClassNames;
+  rootRef: RefObject<HTMLDivElement | null>;
 }
 
 export const FileManagerContext = createContext<FileManagerContextValue | null>(

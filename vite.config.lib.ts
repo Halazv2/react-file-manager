@@ -12,7 +12,7 @@ export default defineConfig({
     dts({
       tsconfigPath: resolve(root, "tsconfig.app.json"),
       include: ["src"],
-      exclude: ["src/**/*.test.ts", "demo"],
+      exclude: ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test", "demo"],
       rollupTypes: true
     })
   ],

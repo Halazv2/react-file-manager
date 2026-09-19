@@ -114,6 +114,18 @@ const FILE_FAMILIES: Record<string, { accent: string; label: string }> = {
   sh: { accent: "#4E5D6C", label: "SH" }, // Terminal Slate
 };
 
+const FILE_ICON_LABEL_MIN_SIZE = 28;
+
+function chipLabelColor(accent: string): string {
+  const hex = accent.replace("#", "");
+  if (hex.length !== 6) return "#fff";
+  const r = Number.parseInt(hex.slice(0, 2), 16) / 255;
+  const g = Number.parseInt(hex.slice(2, 4), 16) / 255;
+  const b = Number.parseInt(hex.slice(4, 6), 16) / 255;
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luminance > 0.55 ? "#111827" : "#fff";
+}
+
 export function FileTypeIcon({ extension, size = 40, ...props }: FileTypeIconProps) {
   const normalizedExtension = extension?.replace(/^\./, "").toLowerCase() || "";
   const family = FILE_FAMILIES[normalizedExtension] || {
@@ -121,17 +133,22 @@ export function FileTypeIcon({ extension, size = 40, ...props }: FileTypeIconPro
     label: (extension || "FILE").slice(0, 4).toUpperCase(),
   };
   const fontSize = family.label.length > 3 ? 4.4 : 5.2;
+  const showLabel = size >= FILE_ICON_LABEL_MIN_SIZE;
 
   return (
-    <svg width={size} height={size} fill='none' viewBox='0 0 40 40' aria-hidden='true' {...props}>
+    <svg width={size} height={size} fill="none" viewBox="0 0 40 40" aria-hidden="true" {...props}>
       <path
-        stroke='#D5D7DA'
+        stroke="var(--rfm-icon-outline, currentColor)"
         strokeWidth={1.5}
-        d='M7.75 4A3.25 3.25 0 0 1 11 .75h16c.121 0 .238.048.323.134l10.793 10.793a.46.46 0 0 1 .134.323v24A3.25 3.25 0 0 1 35 39.25H11A3.25 3.25 0 0 1 7.75 36z'
+        d="M7.75 4A3.25 3.25 0 0 1 11 .75h16c.121 0 .238.048.323.134l10.793 10.793a.46.46 0 0 1 .134.323v24A3.25 3.25 0 0 1 35 39.25H11A3.25 3.25 0 0 1 7.75 36z"
       />
-      <path stroke='#D5D7DA' strokeWidth={1.5} d='M27 .5V8a4 4 0 0 0 4 4h7.5' />
+      <path stroke="var(--rfm-icon-outline, currentColor)" strokeWidth={1.5} d="M27 .5V8a4 4 0 0 0 4 4h7.5" />
       <rect width={33} height={16} x={1} y={18} fill={family.accent} rx={2} />
-      <text x='17.5' y='28.2' fill='#fff' fontFamily='Arial, sans-serif' fontSize={fontSize} fontWeight='700' textAnchor='middle'>{family.label}</text>
+      {showLabel && (
+        <text x="17.5" y="28.2" fill={chipLabelColor(family.accent)} fontFamily="Arial, sans-serif" fontSize={fontSize} fontWeight="700" textAnchor="middle">
+          {family.label}
+        </text>
+      )}
     </svg>
   );
 }

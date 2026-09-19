@@ -1,6 +1,6 @@
 {
   "name": "@halazv2/react-file-manager",
-  "version": "0.3.4",
+  "version": "0.4.0",
   "description": "Headless-ish React file browser with Finder-style spring-loaded folders and drag-and-drop.",
   "type": "module",
   "license": "MIT",
@@ -19,8 +19,7 @@
     "file-browser",
     "finder",
     "drag-and-drop",
-    "spring-loaded",
-    "tailwind"
+    "spring-loaded"
   ],
   "sideEffects": [
     "**/*.css"

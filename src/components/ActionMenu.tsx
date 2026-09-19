@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent, RefObject } from "react";
 
 import { MoreIcon } from "../icons";
-import { cn, FOCUS_RING, ICON_BUTTON } from "../styles";
+import { useFileManagerContext } from "../context";
+import { cn } from "../styles";
 import type { FileManagerAction } from "../types";
 
 export function ActionMenu({ actions, open, onClose, anchorRef }: { actions: FileManagerAction[]; open: boolean; onClose: () => void; anchorRef: RefObject<HTMLElement | null> }) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ top: 0, left: 0 });
+  const { classNames } = useFileManagerContext();
 
   useEffect(() => {
     if (!open || !anchorRef.current) return;
@@ -40,14 +42,14 @@ export function ActionMenu({ actions, open, onClose, anchorRef }: { actions: Fil
   if (!open || !actions.length) return null;
 
   return (
-    <div ref={menuRef} className='rfm-menu' style={{ position: "fixed", top: pos.top, left: pos.left }} role='menu'>
+    <div ref={menuRef} className={cn("rfm-menu", classNames?.menu)} style={{ position: "fixed", top: pos.top, left: pos.left }} role="menu">
       {actions.map((action) => (
         <button
           key={action.id}
-          type='button'
-          role='menuitem'
+          type="button"
+          role="menuitem"
           disabled={action.disabled}
-          className={action.danger ? "rfm-danger" : undefined}
+          className={cn("rfm-menu-item", action.danger && "rfm-danger")}
           onClick={() => {
             void action.onClick();
             onClose();
@@ -63,6 +65,7 @@ export function ActionMenu({ actions, open, onClose, anchorRef }: { actions: Fil
 export function MoreMenuButton({ actions, label }: { actions: FileManagerAction[]; label: string }) {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const { classNames } = useFileManagerContext();
 
   if (!actions.length) return null;
 
@@ -70,8 +73,8 @@ export function MoreMenuButton({ actions, label }: { actions: FileManagerAction[
     <>
       <button
         ref={buttonRef}
-        type='button'
-        className={cn(ICON_BUTTON, "rfm-more h-[22px] w-[22px]")}
+        type="button"
+        className={cn("rfm-icon-button", "rfm-more", classNames?.iconButton, classNames?.more)}
         aria-label={label}
         onClick={(event: ReactMouseEvent) => {
           event.stopPropagation();
@@ -86,6 +89,7 @@ export function MoreMenuButton({ actions, label }: { actions: FileManagerAction[
 
 export function ContextMenuLayer({ actions, position, onClose }: { actions: FileManagerAction[]; position: { x: number; y: number } | null; onClose: () => void }) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const { classNames } = useFileManagerContext();
 
   useEffect(() => {
     if (!position) return;
@@ -100,14 +104,14 @@ export function ContextMenuLayer({ actions, position, onClose }: { actions: File
   if (!position || !actions.length) return null;
 
   return (
-    <div ref={menuRef} className='rfm-menu' style={{ position: "fixed", top: position.y, left: position.x }} role='menu'>
+    <div ref={menuRef} className={cn("rfm-menu", classNames?.menu)} style={{ position: "fixed", top: position.y, left: position.x }} role="menu">
       {actions.map((action) => (
         <button
           key={action.id}
-          type='button'
-          role='menuitem'
+          type="button"
+          role="menuitem"
           disabled={action.disabled}
-          className={action.danger ? "rfm-danger" : undefined}
+          className={cn("rfm-menu-item", action.danger && "rfm-danger")}
           onClick={() => {
             void action.onClick();
             onClose();
@@ -121,22 +125,18 @@ export function ContextMenuLayer({ actions, position, onClose }: { actions: File
 }
 
 export function BulkActionBar({ count, actions }: { count: number; actions: FileManagerAction[] }) {
+  const { classNames } = useFileManagerContext();
   if (count < 2) return null;
 
   return (
-    <div className='pointer-events-auto absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-gray-900 py-1.5 pr-1.5 pl-4 text-xs text-white shadow-[0_12px_32px_rgba(15,23,42,0.35)]'>
-      <span className='whitespace-nowrap'>{count} selected</span>
-      {actions.length > 0 && <span className='h-4 w-px bg-white/20' />}
+    <div className={cn("rfm-bulk-bar", classNames?.bulkBar)}>
+      <span>{count} selected</span>
       {actions.map((action) => (
         <button
           key={action.id}
-          type='button'
+          type="button"
           disabled={action.disabled}
-          className={cn(
-            "cursor-pointer rounded-full border-0 bg-transparent px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/15 inline-flex items-center gap-1.5",
-            FOCUS_RING,
-            action.danger ? "hover:bg-red-500/20 hover:text-red-200" : "",
-          )}
+          className={cn("rfm-bulk-action", action.danger && "rfm-danger")}
           onClick={() => void action.onClick()}>
           {action.icon}
           {action.label}

@@ -6,6 +6,7 @@ import { initialNodes } from "./mockData";
 export default function App() {
   const [nodes, setNodes] = useState<FileManagerNode[]>(initialNodes);
   const [toast, setToast] = useState<string | null>(null);
+  const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
 
   const notify = useCallback((message: string) => {
     setToast(message);
@@ -76,11 +77,24 @@ export default function App() {
           <span className='h-3 w-3 rounded-full bg-[#febc2e]' />
           <span className='h-3 w-3 rounded-full bg-[#28c840]' />
           <span className='ml-3 text-[13px] font-medium text-gray-500'>My files</span>
+          <span className='ml-auto flex gap-1'>
+            {(["system", "light", "dark"] as const).map((value) => (
+              <button
+                key={value}
+                type='button'
+                className='rounded-md border-0 bg-transparent px-2 py-0.5 text-[11px] font-medium text-gray-600 hover:bg-black/5'
+                aria-pressed={theme === value}
+                onClick={() => setTheme(value)}>
+                {value}
+              </button>
+            ))}
+          </span>
         </div>
         <div className='h-[calc(640px-2.5rem)]'>
           <FileManager
             nodes={nodes}
             storageKey='demo-file-manager'
+            theme={theme === "system" ? undefined : theme}
             onMove={onMove}
             onCreateFolder={onCreateFolder}
             onCreateFile={() => notify("Create file")}

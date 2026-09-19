@@ -20,38 +20,26 @@ npm install @halazv2/react-file-manager
 
 Peer dependencies: `react` and `react-dom` ≥ 18. Optional peer: `pdfjs-dist` ≥ 4 (PDF first-page thumbnails).
 
-### Tailwind (default styling)
+### Styling
 
-The UI is built with Tailwind classes. Point Tailwind at the package, or import the prebuilt stylesheet.
-
-**Tailwind v4**
-
-```css
-@import "tailwindcss";
-@source "../node_modules/@halazv2/react-file-manager/dist";
-
-@theme {
-  --color-rfm-primary: #2563eb;
-  --color-rfm-hover: color-mix(in srgb, #2563eb 12%, transparent);
-}
-```
-
-**Prebuilt CSS** (no Tailwind setup required)
+Import the published stylesheet **before** Tailwind if the host also uses Tailwind v4 (`@layer rfm` otherwise ranks above utilities):
 
 ```ts
 import "@halazv2/react-file-manager/styles.css";
 ```
 
-Theme with CSS variables on `.rfm-root`, or override the Tailwind theme tokens:
+Theme with CSS variables on `.rfm-root`:
 
 ```css
 .rfm-root {
-  --rfm-primary: #0f766e; /* reflow / brand */
-  --rfm-hover: color-mix(in srgb, var(--rfm-primary) 12%, transparent);
+  --rfm-accent: #0f766e;
+  --rfm-selected: color-mix(in srgb, var(--rfm-accent) 12%, transparent);
   --rfm-surface: #ffffff;
-  --rfm-muted: #6b7280;
+  --rfm-text-muted: #6b7280;
 }
 ```
+
+Pass `theme="dark"` or `theme="light"` to set `data-theme` on the root (omit for system preference).
 
 ## Quick start
 
@@ -114,7 +102,7 @@ The component fills its parent. Give the parent a height.
 - Context / “more” menus via `getItemActions`
 - Bulk action bar via `getBulkActions` (Open / Delete defaults when callbacks exist)
 - Rename, download file/folder, create file hooks
-- Theme tokens (`--rfm-primary`, `--rfm-hover`, surfaces)
+- Theme tokens (`--rfm-accent`, `--rfm-selected`, surfaces)
 
 Host apps own document viewers, merge/split, RBAC, and domain modals — wire them through callbacks and action getters.
 
