@@ -1,10 +1,11 @@
 import { createElement, useCallback, useDeferredValue, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
+import type { DragEvent, KeyboardEvent, MouseEvent, PointerEvent } from "react";
 
 import type { FileManagerContextValue } from "../context";
 import { FILE_MANAGER_DRAG_MIME, isInternalFileManagerDrag, planExternalDrop, readDataTransferItems } from "../core/droppedItems";
 import { DND_IDLE, dndReducer, isDndActive } from "../core/dndMachine";
 import { folderDropTargetHandlers } from "../adapters/dropTarget";
+import { folderIdFromDropTarget, html5DragEnabled, POINTER_DRAG_THRESHOLD, resolvePointerDropTarget, shouldUsePointerDrag } from "../adapters/pointerDnd";
 import { StarIcon, StarSolidIcon } from "../icons";
 import { getFavoriteFolderIds, getRecentFolderIds, MAX_RECENT_FOLDERS, pushRecentFolderId, toggleFavoriteFolderId } from "../adapters/pins";
 import { buildFilePreview } from "../adapters/preview";
@@ -439,10 +440,8 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     [canManage, setSelectedIds],
   );
 
-  const onDropOnFolder = useCallback(
-    async (event: DragEvent, targetFolderId: string | null): Promise<void> => {
-      event.preventDefault();
-      event.stopPropagation();
+  const commitInternalMove = useCallback(
+    async (targetFolderId: string | null): Promise<void> => {
       dropDidHappen.current = true;
       setDropTargetId(null);
       clearHoverTimers();
@@ -460,8 +459,53 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
         dispatchDnd({ type: "RESET" });
       };
 
+      const session = dndRef.current;
+      const dragged =
+        session.status === "dragging" || session.status === "hovering" || session.status === "springOpen"
+          ? session
+          : null;
+      dispatchDnd({ type: "DROP", targetId: targetFolderId });
+      if (!dragged || !canManage) {
+        rollbackSpring();
+        return;
+      }
+
+      const ids = dragged.ids;
+      const ok = await runHostOperation("move", onMove ? () => onMove(ids, targetFolderId) : undefined, labels.moved(ids.length));
+      if (!ok) {
+        rollbackSpring();
+        return;
+      }
+      commitDrop();
+      setSelectedIds([]);
+      setSelectedNode(null);
+      setPreview(null);
+      dispatchDnd({ type: "RESET" });
+    },
+    [canManage, clearHoverTimers, labels, onMove, runHostOperation, setFolderId, setSelectedIds, storageKey],
+  );
+
+  const onDropOnFolder = useCallback(
+    async (event: DragEvent, targetFolderId: string | null): Promise<void> => {
+      event.preventDefault();
+      event.stopPropagation();
+
       const isInternal = isDndActive(dndRef.current) || dndRef.current.status === "dropped" || isInternalFileManagerDrag(event.dataTransfer);
       if (!isInternal) {
+        dropDidHappen.current = true;
+        setDropTargetId(null);
+        clearHoverTimers();
+        const commitDrop = (): void => {
+          setSpringFolderId(undefined);
+          setFolderId(targetFolderId);
+          if (targetFolderId && storageKey) {
+            setRecentIds(pushRecentFolderId(storageKey, targetFolderId));
+          }
+        };
+        const rollbackSpring = (): void => {
+          setSpringFolderId(undefined);
+          dispatchDnd({ type: "RESET" });
+        };
         if (!canManage) {
           rollbackSpring();
           return;
@@ -477,36 +521,13 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
         if (ok) {
           commitDrop();
           dispatchDnd({ type: "RESET" });
-        }
-        else rollbackSpring();
+        } else rollbackSpring();
         return;
       }
 
-      const session = dndRef.current;
-      const dragged =
-        session.status === "dragging" || session.status === "hovering" || session.status === "springOpen"
-          ? session
-          : null;
-      dispatchDnd({ type: "DROP", targetId: targetFolderId });
-      if (!dragged || !canManage) {
-        rollbackSpring();
-        return;
-      }
-
-      const ids = dragged.ids;
-
-      const ok = await runHostOperation("move", onMove ? () => onMove(ids, targetFolderId) : undefined, labels.moved(ids.length));
-      if (!ok) {
-        rollbackSpring();
-        return;
-      }
-      commitDrop();
-      setSelectedIds([]);
-      setSelectedNode(null);
-      setPreview(null);
-      dispatchDnd({ type: "RESET" });
+      await commitInternalMove(targetFolderId);
     },
-    [canManage, clearHoverTimers, labels, onImport, onMove, onUpload, runHostOperation, setFolderId, setSelectedIds, storageKey],
+    [canManage, clearHoverTimers, commitInternalMove, labels, onImport, onUpload, runHostOperation, setFolderId, storageKey],
   );
 
   const onInternalDragEnd = useCallback((): void => {
@@ -520,6 +541,88 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     }
     dropDidHappen.current = false;
   }, [clearHoverTimers]);
+
+  const onPointerDragDown = useCallback(
+    (item: FileManagerItem, event: PointerEvent<HTMLElement>): void => {
+      if (!canManage || !shouldUsePointerDrag(event.pointerType) || event.button !== 0) return;
+      const pointerId = event.pointerId;
+      const startX = event.clientX;
+      const startY = event.clientY;
+      const targetEl = event.currentTarget;
+      let dragging = false;
+      try {
+        targetEl.setPointerCapture(pointerId);
+      } catch {
+        /* jsdom */
+      }
+
+      const cleanup = () => {
+        targetEl.removeEventListener("pointermove", onMove);
+        targetEl.removeEventListener("pointerup", onUp);
+        targetEl.removeEventListener("pointercancel", onCancel);
+        try {
+          targetEl.releasePointerCapture(pointerId);
+        } catch {
+          /* jsdom */
+        }
+      };
+
+      const hoverTarget = (clientX: number, clientY: number) => {
+        const resolved = resolvePointerDropTarget(clientX, clientY);
+        if (resolved === null) {
+          setDropTargetId(null);
+          return;
+        }
+        setDropTargetId(resolved);
+        const folderId = folderIdFromDropTarget(resolved);
+        if (resolved !== "root") {
+          const folder = getIndexedNode(treeIndex, resolved);
+          if (folder && folderHasChildFolders(folder)) scheduleFolderExpand(resolved);
+        }
+        if (folderId !== undefined) scheduleSpringOpen(folderId);
+      };
+
+      const onMove = (native: globalThis.PointerEvent) => {
+        if (native.pointerId !== pointerId) return;
+        if (!dragging) {
+          if (Math.hypot(native.clientX - startX, native.clientY - startY) < POINTER_DRAG_THRESHOLD) return;
+          dragging = true;
+          suppressClickRef.current = true;
+          dropDidHappen.current = false;
+          dispatchDnd({ type: "START", id: item.id, kind: item.kind, selectedIds: selectedIdsRef.current });
+          if (!selectedIdsRef.current.includes(item.id)) {
+            setSelectedIds([item.id]);
+            setSelectedNode(item);
+          }
+        }
+        native.preventDefault();
+        hoverTarget(native.clientX, native.clientY);
+      };
+
+      const onUp = (native: globalThis.PointerEvent) => {
+        if (native.pointerId !== pointerId) return;
+        cleanup();
+        if (!dragging) return;
+        const folderId = folderIdFromDropTarget(resolvePointerDropTarget(native.clientX, native.clientY));
+        if (folderId === undefined) {
+          onInternalDragEnd();
+          return;
+        }
+        void commitInternalMove(folderId);
+      };
+
+      const onCancel = (native: globalThis.PointerEvent) => {
+        if (native.pointerId !== pointerId) return;
+        cleanup();
+        if (dragging) onInternalDragEnd();
+      };
+
+      targetEl.addEventListener("pointermove", onMove);
+      targetEl.addEventListener("pointerup", onUp);
+      targetEl.addEventListener("pointercancel", onCancel);
+    },
+    [canManage, commitInternalMove, onInternalDragEnd, scheduleFolderExpand, scheduleSpringOpen, setSelectedIds, treeIndex],
+  );
 
   const folderDropHandlers = useCallback(
     (targetId: string | "root") => {
@@ -839,6 +942,8 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     selectItem,
     activateItem,
     onDragStart,
+    onPointerDragDown,
+    html5Draggable: html5DragEnabled(),
     onInternalDragEnd,
     onDropOnFolder,
     setView,

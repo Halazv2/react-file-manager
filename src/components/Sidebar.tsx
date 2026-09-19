@@ -157,6 +157,7 @@ export function Sidebar() {
                 type="button"
                 className="rfm-pin-row"
                 aria-current={isCurrent || undefined}
+                data-drop-id={folder.id}
                 data-drop-target={isDrop || undefined}
                 onClick={() => openFolder(folder.id)}
                 {...folderDropHandlers(folder.id)}
@@ -192,6 +193,7 @@ export function Sidebar() {
           type="button"
           className="rfm-home-row"
           aria-current={viewFolderId === null || undefined}
+          data-drop-id="root"
           data-drop-target={dropTargetId === "root" || undefined}
           onClick={() => openFolder(null)}
           {...folderDropHandlers("root")}

@@ -132,7 +132,7 @@ function ItemGrid({
   });
 
   return (
-    <div ref={parentRef} className="rfm-item-scroll">
+    <div ref={parentRef} className="rfm-item-scroll" data-current-folder={folderId ?? "root"}>
       {isBusy && <div className="rfm-busy" aria-busy="true" />}
       {items.length === 0 ? (
         <div className="rfm-empty">

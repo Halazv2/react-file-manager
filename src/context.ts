@@ -3,6 +3,7 @@ import type {
   DragEvent,
   KeyboardEvent,
   MouseEvent,
+  PointerEvent,
   ReactNode,
   RefObject
 } from "react";
@@ -50,6 +51,8 @@ export interface FileManagerContextValue {
   selectItem: (node: FileManagerItem, event?: MouseEvent) => void;
   activateItem: (node: FileManagerItem) => void;
   onDragStart: (node: FileManagerItem, event: DragEvent) => void;
+  onPointerDragDown: (node: FileManagerItem, event: PointerEvent<HTMLElement>) => void;
+  html5Draggable: boolean;
   onInternalDragEnd: () => void;
   onDropOnFolder: (
     event: DragEvent,

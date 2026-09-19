@@ -16,6 +16,7 @@
 - File-type icons use `currentColor` / `--rfm-icon-outline`, contrast-aware chip labels, and chip-only glyphs below 28px.
 - `labels` prop, polite `aria-live` status, keyboard-navigable menus, inline rename (`data-editing`), and per-row error boundaries.
 - `useFileManager` plus `components` slots (`Row`, `Sidebar`, `Browser`, `DetailsPane`).
+- Pointer/touch internal drag adapter (no HTML5 `draggable` on touch) feeding the same DnD reducer.
 
 ### Docs
 

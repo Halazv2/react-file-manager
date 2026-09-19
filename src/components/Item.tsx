@@ -20,6 +20,8 @@ export const Item = memo(function Item({ item, index }: { item: FileManagerItem;
     selectItem,
     activateItem,
     onDragStart,
+    onPointerDragDown,
+    html5Draggable,
     folderDropHandlers,
     renderIcon,
     renderActions,
@@ -52,17 +54,19 @@ export const Item = memo(function Item({ item, index }: { item: FileManagerItem;
     <ItemErrorBoundary itemId={item.id} fallback={<div className="rfm-row" role="option" aria-label={item.name} />}>
       <div className="rfm-row">
         <div
-          draggable={canManage && !isEditing}
+          draggable={canManage && !isEditing && html5Draggable}
           role="option"
           aria-selected={isSelected}
           aria-label={item.name}
           data-view={view}
           data-kind={item.kind}
+          data-drop-id={isFolder ? item.id : undefined}
           data-focused={isFocused || undefined}
           data-drop-target={isDropTarget || undefined}
           data-editing={isEditing || undefined}
           className={cn("rfm-item", classNames?.item)}
           onDragStart={(event) => onDragStart(item, event)}
+          onPointerDown={(event) => onPointerDragDown(item, event)}
           {...(isFolder ? folderDropHandlers(item.id) : {})}
           onClick={(event) => {
             if (isEditing) return;
@@ -149,6 +153,7 @@ export function FolderTree({ folders, depth = 0 }: { folders: FileManagerItem[];
                 aria-label={folder.name}
                 tabIndex={0}
                 data-kind="folder"
+                data-drop-id={folder.id}
                 data-drop-target={isDrop || undefined}
                 className={cn("rfm-tree-row", classNames?.treeRow)}
                 style={{ paddingInlineStart: 6 + depth * 12 }}

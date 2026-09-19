@@ -291,4 +291,24 @@ describe("FileManager characterization", () => {
     expect(screen.getByRole("complementary", { name: "Custom details" })).toBeTruthy();
     expect(screen.queryByText("Select a file or folder to view details")).toBeNull();
   });
+
+  it("moves an item with a touch pointer drag onto a folder", async () => {
+    const onMove = vi.fn();
+    renderManager({ onMove });
+
+    const source = option("README.md");
+    const dest = option("Photos");
+    const original = document.elementFromPoint;
+    document.elementFromPoint = () => dest;
+
+    fireEvent.pointerDown(source, { pointerId: 1, pointerType: "touch", button: 0, clientX: 0, clientY: 0 });
+    fireEvent.pointerMove(source, { pointerId: 1, pointerType: "touch", clientX: 24, clientY: 24 });
+    fireEvent.pointerUp(source, { pointerId: 1, pointerType: "touch", clientX: 24, clientY: 24 });
+
+    await waitFor(() => {
+      expect(onMove).toHaveBeenCalledWith(["readme"], "photos");
+    });
+
+    document.elementFromPoint = original;
+  });
 });

@@ -269,9 +269,7 @@ The package entry is a Client Component (`"use client"`). In the App Router, imp
 
 ## Known limitations
 
-- **Touch drag-and-drop** is not implemented yet. Internal moves use HTML5 `draggable` (mouse / trackpad). Touch support is planned.
-- Card view is not virtualized (list view is, after 40 items).
-- Host callback rejections (`onMove`, `onRename`, …) are not surfaced yet.
+Card virtualization (list and cards after 40 items), host-callback errors, and pointer/touch internal moves are implemented. Remaining product gaps are listed under Roadmap.
 
 ## Roadmap
 

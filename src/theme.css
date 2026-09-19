@@ -288,6 +288,7 @@
     padding-inline: 10px;
     border-radius: var(--rfm-radius);
     cursor: pointer;
+    touch-action: none;
     transition: background-color var(--rfm-duration);
   }
 
