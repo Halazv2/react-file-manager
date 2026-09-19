@@ -1,22 +1,15 @@
+import { breadcrumbsFromIndex, buildTreeIndex, folderContainsIdInIndex, getIndexedNode } from "./treeIndex";
 import type { FileManagerItem, FileManagerNode, FileManagerSortBy } from "./types";
 
 export function getNodeById(
   nodes: FileManagerNode[],
   id: string
 ): FileManagerNode | null {
-  for (const node of nodes) {
-    if (node.id === id) return node;
-    if (node.children?.length) {
-      const nested = getNodeById(node.children, id);
-      if (nested) return nested;
-    }
-  }
-  return null;
+  return getIndexedNode(buildTreeIndex(nodes), id);
 }
 
 export function folderContainsId(folder: FileManagerNode, id: string): boolean {
-  if (folder.id === id) return true;
-  return (folder.children ?? []).some((child) => folderContainsId(child, id));
+  return folderContainsIdInIndex(buildTreeIndex([folder]), folder.id, id);
 }
 
 export function folderHasChildFolders(folder: FileManagerNode): boolean {
@@ -71,26 +64,7 @@ export function getBreadcrumbs(
   nodes: FileManagerNode[],
   folderId: string | null
 ): FileManagerNode[] {
-  if (!folderId) return [];
-
-  const path: FileManagerNode[] = [];
-
-  const walk = (folders: FileManagerNode[]): boolean => {
-    for (const node of folders) {
-      if (node.id === folderId) {
-        path.push(node);
-        return true;
-      }
-      if (node.kind === "folder" && walk(node.children ?? [])) {
-        path.unshift(node);
-        return true;
-      }
-    }
-    return false;
-  };
-
-  walk(nodes);
-  return path;
+  return breadcrumbsFromIndex(buildTreeIndex(nodes), folderId);
 }
 
 function formatPath(parts: string[], rootLabel: string): string {

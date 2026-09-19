@@ -227,4 +227,24 @@ describe("FileManager characterization", () => {
     expect(within(folderContents()).getByRole("option", { name: "notes.txt" })).toBeTruthy();
     expect(onFolderChange).not.toHaveBeenCalled();
   });
+
+  it("drops selection when selected ids leave the tree", () => {
+    const onSelectionChange = vi.fn();
+    const { rerender } = render(
+      <FileManager nodes={nodes} defaultSelectedIds={["readme"]} onSelectionChange={onSelectionChange} />
+    );
+
+    expect(option("README.md").getAttribute("aria-selected")).toBe("true");
+
+    rerender(
+      <FileManager
+        nodes={nodes.filter((node) => node.id !== "readme")}
+        defaultSelectedIds={["readme"]}
+        onSelectionChange={onSelectionChange}
+      />
+    );
+
+    expect(within(folderContents()).queryByRole("option", { name: "README.md" })).toBeNull();
+    expect(onSelectionChange).toHaveBeenCalledWith([]);
+  });
 });

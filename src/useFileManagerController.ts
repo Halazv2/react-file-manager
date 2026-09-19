@@ -8,7 +8,8 @@ import { StarIcon, StarSolidIcon } from "./icons";
 import { getFavoriteFolderIds, getRecentFolderIds, MAX_RECENT_FOLDERS, pushRecentFolderId, toggleFavoriteFolderId } from "./pins";
 import { buildFilePreview } from "./preview";
 import { idsInRange } from "./selection";
-import { folderContainsId, folderHasChildFolders, getBreadcrumbs, getExtension, getNodeById, listFolder, searchNodes } from "./tree";
+import { folderHasChildFolders, getExtension, listFolder, searchNodes } from "./tree";
+import { breadcrumbsFromIndex, buildTreeIndex, folderContainsIdInIndex, getIndexedNode } from "./treeIndex";
 import type { DropTargetId, FileManagerAction, FileManagerItem, FileManagerProps, FileManagerView, FilePreviewResult } from "./types";
 
 function useControllableState<T>(controlled: T | undefined, defaultValue: T, onChange?: (value: T) => void): [T, (value: T) => void] {
@@ -95,6 +96,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
   const [pendingOperation, setPendingOperation] = useState<string | null>(null);
 
   selectedIdsRef.current = selectedIds;
+  const treeIndex = useMemo(() => buildTreeIndex(nodes), [nodes]);
   const viewFolderId = springFolderId !== undefined ? springFolderId : folderId;
 
   const items = useMemo(() => {
@@ -117,7 +119,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     });
   }, [items, nodes, props.sortBy, props.sortComparator, props.sortDirection, springFolderId]);
 
-  const breadcrumbs = useMemo(() => getBreadcrumbs(nodes, viewFolderId), [nodes, viewFolderId]);
+  const breadcrumbs = useMemo(() => breadcrumbsFromIndex(treeIndex, viewFolderId), [treeIndex, viewFolderId]);
 
   const pinnedFolders = useMemo(() => {
     if (!storageKey) return [];
@@ -127,7 +129,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
 
     for (const id of favoriteIds) {
       if (seen.has(id)) continue;
-      const folder = getNodeById(nodes, id);
+      const folder = getIndexedNode(treeIndex, id);
       if (!folder || folder.kind !== "folder") continue;
       seen.add(id);
       pinned.push(folder);
@@ -136,20 +138,30 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     for (const id of recentIds) {
       if (recents.length >= MAX_RECENT_FOLDERS) break;
       if (seen.has(id)) continue;
-      const folder = getNodeById(nodes, id);
+      const folder = getIndexedNode(treeIndex, id);
       if (!folder || folder.kind !== "folder") continue;
       seen.add(id);
       recents.push(folder);
     }
 
     return [...pinned, ...recents];
-  }, [favoriteIds, recentIds, nodes, storageKey]);
+  }, [favoriteIds, recentIds, storageKey, treeIndex]);
 
   useEffect(() => {
     if (!storageKey) return;
     setFavoriteIds(getFavoriteFolderIds(storageKey));
     setRecentIds(getRecentFolderIds(storageKey));
   }, [storageKey]);
+
+  useEffect(() => {
+    const nextIds = selectedIds.filter((id) => treeIndex.byId.has(id));
+    if (nextIds.length !== selectedIds.length) setSelectedIds(nextIds);
+    setSelectedNode((current) => {
+      if (!current) return null;
+      const next = treeIndex.byId.get(current.id);
+      return next ? (next as FileManagerItem) : null;
+    });
+  }, [selectedIds, setSelectedIds, treeIndex]);
 
   useEffect(() => {
     const pathIds = breadcrumbs.map((folder) => folder.id);
@@ -336,8 +348,8 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
       if (currentView === id) return;
       if (id !== null && dragItem.current.kind === "folder") {
         if (dragItem.current.id === id) return;
-        const dragged = getNodeById(nodes, dragItem.current.id);
-        if (dragged && folderContainsId(dragged, id)) return;
+        const dragged = getIndexedNode(treeIndex, dragItem.current.id);
+        if (dragged && folderContainsIdInIndex(treeIndex, dragged.id, id)) return;
       }
       const key = id === null ? "root" : `folder-${id}`;
       if (pendingSpringKey.current === key) return;
@@ -349,7 +361,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
         setDropTargetId(null);
       }, springLoadDelay);
     },
-    [folderId, nodes, springFolderId, springLoadDelay],
+    [folderId, springFolderId, springLoadDelay, treeIndex],
   );
 
   const onDragStart = useCallback(
@@ -444,7 +456,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
   const folderDropHandlers = useCallback(
     (targetId: string | "root") => {
       const id = targetId === "root" ? null : targetId;
-      const folder = targetId === "root" ? null : getNodeById(nodes, targetId);
+      const folder = targetId === "root" ? null : getIndexedNode(treeIndex, targetId);
       return folderDropTargetHandlers({
         canManage,
         targetId,
@@ -459,7 +471,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
         clearExpandTimer: clearHoverTimers,
       });
     },
-    [canManage, clearHoverTimers, nodes, onDropOnFolder, scheduleFolderExpand, scheduleSpringOpen],
+    [canManage, clearHoverTimers, onDropOnFolder, scheduleFolderExpand, scheduleSpringOpen, treeIndex],
   );
 
   const toggleExpanded = useCallback((event: MouseEvent, id: string): void => {
