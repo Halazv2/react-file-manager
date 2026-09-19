@@ -1,3 +1,5 @@
+"use client";
+
 export { FileManager } from "./FileManager";
 export {
   FILE_MANAGER_DRAG_MIME,
@@ -6,35 +8,14 @@ export {
   isInternalFileManagerDrag,
   planExternalDrop,
   readDataTransferItems,
-  readFileSystemEntries
+  readFileSystemEntries,
 } from "./droppedItems";
 export { folderDropTargetHandlers } from "./dropTarget";
 export { defaultNodeIcon, FileTypeIcon, FolderTypeIcon } from "./fileIcons";
 export type { FileTypeIconProps, FolderTypeIconProps } from "./fileIcons";
-export {
-  buildFilePreview,
-  isImageExtension,
-  isPdfExtension,
-  isTextExtension
-} from "./preview";
-export {
-  getFavoriteFolderIds,
-  getRecentFolderIds,
-  MAX_RECENT_FOLDERS,
-  pushRecentFolderId,
-  toggleFavoriteFolderId
-} from "./pins";
-export {
-  folderContainsId,
-  folderHasChildFolders,
-  getBreadcrumbs,
-  getExtension,
-  getFolderContents,
-  getNodeById,
-  listFolder,
-  moveNodes,
-  searchNodes
-} from "./tree";
+export { buildFilePreview, isImageExtension, isPdfExtension, isTextExtension } from "./preview";
+export { getFavoriteFolderIds, getRecentFolderIds, MAX_RECENT_FOLDERS, pushRecentFolderId, toggleFavoriteFolderId } from "./pins";
+export { folderContainsId, folderHasChildFolders, getBreadcrumbs, getExtension, getFolderContents, getNodeById, listFolder, moveNodes, searchNodes } from "./tree";
 export type {
   DropTargetId,
   FileManagerAction,
@@ -45,5 +26,5 @@ export type {
   FileManagerProps,
   FileManagerView,
   FilePreviewResult,
-  PreviewKind
+  PreviewKind,
 } from "./types";
