@@ -27,7 +27,9 @@ function writeIds(key: string, ids: string[]): void {
 
   try {
     window.localStorage.setItem(key, JSON.stringify(ids.slice(0, 12)));
-  } catch {}
+  } catch {
+    /* localStorage may be unavailable */
+  }
 }
 
 export function getFavoriteFolderIds(storageKey: string): string[] {
