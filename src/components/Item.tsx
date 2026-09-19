@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 import { BulkActionBar, ContextMenuLayer, MoreMenuButton } from "./ActionMenu";
 import { defaultNodeIcon } from "../fileIcons";
 import { StarSolidIcon } from "../icons";
@@ -7,7 +9,7 @@ import { folderHasChildFolders, getExtension } from "../tree";
 import { formatBytes } from "../formatBytes";
 import type { FileManagerItem } from "../types";
 
-export function Item({ item, index }: { item: FileManagerItem; index: number }) {
+export const Item = memo(function Item({ item, index }: { item: FileManagerItem; index: number }) {
   const {
     view,
     selectedIds,
@@ -70,7 +72,7 @@ export function Item({ item, index }: { item: FileManagerItem; index: number }) 
       </div>
     </div>
   );
-}
+});
 
 export function FolderTree({ folders, depth = 0 }: { folders: FileManagerItem[]; depth?: number }) {
   const { viewFolderId, dropTargetId, expandedIds, favoriteIds, openFolder, toggleExpanded, folderDropHandlers, renderIcon, renderActions, resolveItemActions, openContextMenu, classNames } =

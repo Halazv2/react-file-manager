@@ -89,10 +89,21 @@ export const FileManagerContext = createContext<FileManagerContextValue | null>(
   null
 );
 
+export const FileManagerStateContext = createContext<FileManagerContextValue | null>(null);
+export const FileManagerActionsContext = createContext<FileManagerContextValue | null>(null);
+
 export function useFileManagerContext(): FileManagerContextValue {
-  const value = useContext(FileManagerContext);
+  const combined = useContext(FileManagerContext);
+  const state = useContext(FileManagerStateContext);
+  const value = combined ?? state;
   if (!value) {
     throw new Error("FileManager components must be used inside <FileManager>");
   }
   return value;
 }
+
+export function useFileManagerActions(): FileManagerContextValue {
+  const actions = useContext(FileManagerActionsContext);
+  return actions ?? useFileManagerContext();
+}
+
