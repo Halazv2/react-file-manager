@@ -10,6 +10,7 @@ export {
 } from "./droppedItems";
 export { folderDropTargetHandlers } from "./dropTarget";
 export { defaultNodeIcon, FileTypeIcon, FolderTypeIcon } from "./fileIcons";
+export type { FileTypeIconProps, FolderTypeIconProps } from "./fileIcons";
 export {
   buildFilePreview,
   isImageExtension,

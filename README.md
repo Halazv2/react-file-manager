@@ -104,7 +104,7 @@ The component fills its parent. Give the parent a height.
 ## What it includes
 
 - Three-pane layout: sidebar, browser (list/cards), details
-- Built-in extension-aware file/folder icons
+- Built-in extension-aware file/folder icons with readable, color-coded extension badges
 - Pins and recent folders (`storageKey` → localStorage)
 - Breadcrumbs, multi-select, keyboard navigation
 - Drag-and-drop move with spring-loaded folders
@@ -184,6 +184,10 @@ type FileManagerNode = {
   meta?: Record<string, unknown>;
 };
 ```
+
+## Icons
+
+`FileTypeIcon`, `FolderTypeIcon`, and `defaultNodeIcon` are public exports for host layouts. The built-in set recognizes 20+ extensions and shows each one as a readable, color-coded document badge; unknown extensions fall back to a labeled document glyph. Use `renderIcon` to replace these defaults for any node.
 
 `FileManagerDropItem` (OS drops into `onImport`):
 
