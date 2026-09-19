@@ -22,9 +22,12 @@ export function FileManager(props: FileManagerProps) {
             style={props.style}
             data-theme={props.theme}
             tabIndex={0}
-            aria-label="File manager"
+            aria-label={value.labels.fileManager}
             onKeyDown={value.handleKeyDown}
             onDragEnd={value.onInternalDragEnd}>
+            <div className="rfm-live" aria-live="polite" aria-atomic="true">
+              {value.liveMessage}
+            </div>
             <div className={cn("rfm-layout", classNames?.layout)} data-details={value.showDetails ? undefined : "false"}>
               <Sidebar />
               <Browser />

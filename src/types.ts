@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import type { FileManagerDropItem } from "./core/droppedItems";
+import type { FileManagerLabels } from "./labels";
 
 export type { FileManagerDropItem };
 
@@ -125,4 +126,5 @@ export interface FileManagerProps {
   renderPreview?: (node: FileManagerItem | null) => ReactNode;
   renderActions?: (node: FileManagerNode) => ReactNode;
   onError?: (error: unknown, context: { operation: string }) => void;
+  labels?: Partial<FileManagerLabels>;
 }

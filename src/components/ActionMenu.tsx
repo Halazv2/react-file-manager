@@ -1,13 +1,64 @@
 import { useEffect, useRef, useState } from "react";
-import type { MouseEvent as ReactMouseEvent, RefObject } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent, RefObject } from "react";
 
 import { MoreIcon } from "../icons";
 import { useFileManagerContext } from "../context";
 import { cn } from "../styles";
 import type { FileManagerAction } from "../types";
 
+function focusableItems(menu: HTMLElement): HTMLButtonElement[] {
+  return Array.from(menu.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)'));
+}
+
+function moveMenuFocus(menu: HTMLElement, delta: number): void {
+  const items = focusableItems(menu);
+  if (!items.length) return;
+  const current = items.findIndex((item) => item === document.activeElement);
+  const next = items[(current + delta + items.length) % items.length];
+  next?.focus();
+}
+
+export function onMenuKeyDown(event: ReactKeyboardEvent<HTMLDivElement>, onClose: () => void): void {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    event.stopPropagation();
+    onClose();
+    return;
+  }
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    event.stopPropagation();
+    moveMenuFocus(event.currentTarget, 1);
+    return;
+  }
+  if (event.key === "ArrowUp") {
+    event.preventDefault();
+    event.stopPropagation();
+    moveMenuFocus(event.currentTarget, -1);
+    return;
+  }
+  if (event.key === "Home") {
+    event.preventDefault();
+    event.stopPropagation();
+    focusableItems(event.currentTarget)[0]?.focus();
+    return;
+  }
+  if (event.key === "End") {
+    event.preventDefault();
+    event.stopPropagation();
+    const items = focusableItems(event.currentTarget);
+    items[items.length - 1]?.focus();
+  }
+}
+
+export function focusFirstMenuItem(menu: HTMLElement | null): void {
+  if (!menu) return;
+  focusableItems(menu)[0]?.focus();
+}
+
 export function ActionMenu({ actions, open, onClose, anchorRef }: { actions: FileManagerAction[]; open: boolean; onClose: () => void; anchorRef: RefObject<HTMLElement | null> }) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const focusedOnce = useRef(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const { classNames } = useFileManagerContext();
 
@@ -28,21 +79,32 @@ export function ActionMenu({ actions, open, onClose, anchorRef }: { actions: Fil
       }
       onClose();
     };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
     document.addEventListener("mousedown", onDoc);
-    document.addEventListener("keydown", onKey);
     return () => {
       document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
     };
   }, [open, onClose, anchorRef]);
 
   if (!open || !actions.length) return null;
 
   return (
-    <div ref={menuRef} className={cn("rfm-menu", classNames?.menu)} style={{ position: "fixed", top: pos.top, left: pos.left }} role="menu">
+    <div
+      ref={(node) => {
+        menuRef.current = node;
+        if (!node) {
+          focusedOnce.current = false;
+          return;
+        }
+        if (!focusedOnce.current) {
+          focusedOnce.current = true;
+          focusFirstMenuItem(node);
+        }
+      }}
+      className={cn("rfm-menu", classNames?.menu)}
+      style={{ position: "fixed", top: pos.top, left: pos.left }}
+      role="menu"
+      tabIndex={-1}
+      onKeyDown={(event) => onMenuKeyDown(event, onClose)}>
       {actions.map((action) => (
         <button
           key={action.id}
@@ -76,6 +138,8 @@ export function MoreMenuButton({ actions, label }: { actions: FileManagerAction[
         type="button"
         className={cn("rfm-icon-button", "rfm-more", classNames?.iconButton, classNames?.more)}
         aria-label={label}
+        aria-haspopup="menu"
+        aria-expanded={open}
         onClick={(event: ReactMouseEvent) => {
           event.stopPropagation();
           setOpen((value) => !value);
@@ -89,6 +153,7 @@ export function MoreMenuButton({ actions, label }: { actions: FileManagerAction[
 
 export function ContextMenuLayer({ actions, position, onClose }: { actions: FileManagerAction[]; position: { x: number; y: number } | null; onClose: () => void }) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const focusedOnce = useRef(false);
   const { classNames } = useFileManagerContext();
 
   useEffect(() => {
@@ -104,7 +169,23 @@ export function ContextMenuLayer({ actions, position, onClose }: { actions: File
   if (!position || !actions.length) return null;
 
   return (
-    <div ref={menuRef} className={cn("rfm-menu", classNames?.menu)} style={{ position: "fixed", top: position.y, left: position.x }} role="menu">
+    <div
+      ref={(node) => {
+        menuRef.current = node;
+        if (!node) {
+          focusedOnce.current = false;
+          return;
+        }
+        if (!focusedOnce.current) {
+          focusedOnce.current = true;
+          focusFirstMenuItem(node);
+        }
+      }}
+      className={cn("rfm-menu", classNames?.menu)}
+      style={{ position: "fixed", top: position.y, left: position.x }}
+      role="menu"
+      tabIndex={-1}
+      onKeyDown={(event) => onMenuKeyDown(event, onClose)}>
       {actions.map((action) => (
         <button
           key={action.id}
@@ -125,12 +206,12 @@ export function ContextMenuLayer({ actions, position, onClose }: { actions: File
 }
 
 export function BulkActionBar({ count, actions }: { count: number; actions: FileManagerAction[] }) {
-  const { classNames } = useFileManagerContext();
+  const { classNames, labels } = useFileManagerContext();
   if (count < 2) return null;
 
   return (
     <div className={cn("rfm-bulk-bar", classNames?.bulkBar)}>
-      <span>{count} selected</span>
+      <span>{labels.selectedCount(count)}</span>
       {actions.map((action) => (
         <button
           key={action.id}

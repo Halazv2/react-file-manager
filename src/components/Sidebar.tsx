@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
 
 import { FolderTree } from "./Item";
+import { focusFirstMenuItem, onMenuKeyDown } from "./ActionMenu";
 import { defaultNodeIcon } from "../fileIcons";
 import {
   CollapseIcon,
@@ -33,7 +34,8 @@ export function Sidebar() {
     storageKey,
     renderIcon,
     rootRef,
-    classNames
+    classNames,
+    labels
   } = useFileManagerContext();
 
   const [addOpen, setAddOpen] = useState(false);
@@ -51,6 +53,7 @@ export function Sidebar() {
 
   useEffect(() => {
     if (!addOpen) return;
+    focusFirstMenuItem(addMenuRef.current);
     const onDoc = (event: globalThis.MouseEvent) => {
       if (
         addMenuRef.current?.contains(event.target as Node) ||
@@ -60,14 +63,9 @@ export function Sidebar() {
       }
       setAddOpen(false);
     };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setAddOpen(false);
-    };
     document.addEventListener("mousedown", onDoc);
-    document.addEventListener("keydown", onKey);
     return () => {
       document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
     };
   }, [addOpen]);
 
@@ -86,7 +84,7 @@ export function Sidebar() {
             onClick={() => setAddOpen((open) => !open)}
           >
             <PlusIcon size={16} />
-            Add New
+            {labels.addNew}
           </button>
           {addOpen &&
             portalTarget &&
@@ -95,6 +93,8 @@ export function Sidebar() {
                 ref={addMenuRef}
                 className={cn("rfm-menu", classNames?.menu)}
                 role="menu"
+                tabIndex={-1}
+                onKeyDown={(event) => onMenuKeyDown(event, () => setAddOpen(false))}
                 style={{
                   position: "fixed",
                   top: addPos.top,
@@ -114,7 +114,7 @@ export function Sidebar() {
                     }}
                   >
                     <FolderIcon size={16} />
-                    {viewFolderId ? "Create Folder here" : "Create Folder"}
+                    {viewFolderId ? labels.createFolderHere : labels.createFolder}
                   </button>
                 )}
                 {onCreateFile && (
@@ -128,7 +128,7 @@ export function Sidebar() {
                     }}
                   >
                     <FileIcon size={16} />
-                    Upload Document
+                    {labels.uploadDocument}
                   </button>
                 )}
               </div>,
@@ -140,13 +140,13 @@ export function Sidebar() {
       <div className="rfm-toolbar-actions" style={{ justifyContent: "flex-end", width: "100%" }}>
         <button type="button" className="rfm-collapse-all" onClick={collapseAll}>
           <CollapseIcon size={14} />
-          Collapse all
+          {labels.collapseAll}
         </button>
       </div>
 
       {storageKey && pinnedFolders.length > 0 && (
         <div className="rfm-pins">
-          <div className="rfm-pins-label">Pinned & recent</div>
+          <div className="rfm-pins-label">{labels.pinnedRecent}</div>
           {pinnedFolders.map((folder) => {
             const isFavorite = favoriteIds.includes(folder.id);
             const isCurrent = viewFolderId === folder.id;
@@ -167,7 +167,7 @@ export function Sidebar() {
                   role="button"
                   tabIndex={0}
                   className="rfm-pin-toggle"
-                  aria-label={isFavorite ? "Unpin" : "Pin"}
+                  aria-label={isFavorite ? labels.unpin : labels.pin}
                   onClick={(event) => toggleFavorite(event, folder.id)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {

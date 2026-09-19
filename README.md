@@ -178,7 +178,8 @@ Every `FileManagerProps` field:
 | `onImport` | `(items, folderId) => void` | OS folder (and mixed) drops as a tree. Prefer this to create folders instead of documents. |
 | `onCreateFolder` | `(parentId) => void` | New folder action. |
 | `onCreateFile` | `(folderId) => void` | Optional “new document” entry. |
-| `onRename` | `(id, name) => void` | Menu rename (`window.prompt` today). |
+| `onRename` | `(id, name) => void` | Inline rename (F2 or menu). Sets `data-editing` on the row. |
+| `labels` | `Partial<FileManagerLabels>` | Override UI copy (search, empty states, menus, live announcements). |
 | `onDownloadFile` / `onDownloadFolder` | `(id) => void` | Download hooks. |
 | `onDelete` | `(ids) => void` | Delete / Backspace. |
 | `getItemActions` | `(node) => FileManagerAction[]` | Context / more menu items. |

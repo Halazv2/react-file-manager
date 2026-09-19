@@ -12,6 +12,7 @@ import { idsInRange } from "../core/selection";
 import { folderHasChildFolders, getExtension, listFolder, searchNodes } from "../core/tree";
 import { breadcrumbsFromIndex, buildTreeIndex, folderContainsIdInIndex, getIndexedNode } from "../core/treeIndex";
 import type { DropTargetId, FileManagerAction, FileManagerItem, FileManagerProps, FileManagerView, FilePreviewResult } from "../types";
+import { resolveLabels } from "../labels";
 
 function useControllableState<T>(controlled: T | undefined, defaultValue: T, onChange?: (value: T) => void): [T, (value: T) => void] {
   const [uncontrolled, setUncontrolled] = useState(defaultValue);
@@ -59,6 +60,8 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     onError,
   } = props;
 
+  const labels = useMemo(() => resolveLabels(props.labels), [props.labels]);
+
   const previewEnabled = enablePreview !== undefined ? enablePreview : Boolean(onGetPreviewUrl);
 
   const [folderId, setFolderId] = useControllableState(props.folderId, props.defaultFolderId ?? null, props.onFolderChange);
@@ -100,6 +103,10 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
   const dropDidHappen = useRef(false);
   const previewRequest = useRef(0);
   const [pendingOperation, setPendingOperation] = useState<string | null>(null);
+  const [liveMessage, setLiveMessage] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const labelsRef = useRef(labels);
+  labelsRef.current = labels;
 
   selectedIdsRef.current = selectedIds;
   dndRef.current = dnd;
@@ -283,42 +290,71 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     pendingSpringKey.current = null;
   }, []);
 
+  const announce = useCallback((message: string) => {
+    setLiveMessage(message);
+  }, []);
+
+  useEffect(() => {
+    const query = deferredSearch.trim();
+    if (query) announce(labels.searchResults(query));
+  }, [announce, deferredSearch, labels]);
+
   const runHostOperation = useCallback(
-    async (operation: string, task?: () => void | Promise<void>): Promise<boolean> => {
+    async (operation: string, task?: () => void | Promise<void>, successMessage?: string): Promise<boolean> => {
       if (!task) return true;
       setPendingOperation(operation);
       try {
         await task();
+        if (successMessage) announce(successMessage);
         return true;
       } catch (error) {
         onError?.(error, { operation });
+        announce(labelsRef.current.operationFailed(operation));
         return false;
       } finally {
         setPendingOperation(null);
       }
     },
-    [onError],
+    [announce, onError],
   );
 
   const handleUpload = useCallback(
     (files: File[], folderId: string | null) => {
-      void runHostOperation("upload", onUpload ? () => onUpload(files, folderId) : undefined);
+      void runHostOperation("upload", onUpload ? () => onUpload(files, folderId) : undefined, labels.uploaded(files.length));
     },
-    [onUpload, runHostOperation],
+    [labels, onUpload, runHostOperation],
   );
 
   const handleDelete = useCallback(
     (ids: string[]) => {
-      void runHostOperation("delete", onDelete ? () => onDelete(ids) : undefined);
+      void runHostOperation("delete", onDelete ? () => onDelete(ids) : undefined, labels.deleted(ids.length));
     },
-    [onDelete, runHostOperation],
+    [labels, onDelete, runHostOperation],
   );
 
   const handleRename = useCallback(
     (id: string, name: string) => {
-      void runHostOperation("rename", onRename ? () => onRename(id, name) : undefined);
+      void runHostOperation("rename", onRename ? () => onRename(id, name) : undefined, labels.renamed(name));
     },
-    [onRename, runHostOperation],
+    [labels, onRename, runHostOperation],
+  );
+
+  const startRename = useCallback((id: string) => {
+    setEditingId(id);
+  }, []);
+
+  const cancelRename = useCallback(() => {
+    setEditingId(null);
+  }, []);
+
+  const commitRename = useCallback(
+    (id: string, name: string) => {
+      setEditingId(null);
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      handleRename(id, trimmed);
+    },
+    [handleRename],
   );
 
   const handleDownloadFile = useCallback(
@@ -434,9 +470,9 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
         const plan = planExternalDrop(dropped, Boolean(onImport));
         let ok = true;
         if (plan.action === "import") {
-          ok = await runHostOperation("import", () => onImport?.(plan.items, targetFolderId));
+          ok = await runHostOperation("import", () => onImport?.(plan.items, targetFolderId), labels.imported(plan.items.length));
         } else if (plan.action === "upload") {
-          ok = await runHostOperation("upload", () => onUpload?.(plan.files, targetFolderId));
+          ok = await runHostOperation("upload", () => onUpload?.(plan.files, targetFolderId), labels.uploaded(plan.files.length));
         }
         if (ok) {
           commitDrop();
@@ -459,7 +495,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
 
       const ids = dragged.ids;
 
-      const ok = await runHostOperation("move", onMove ? () => onMove(ids, targetFolderId) : undefined);
+      const ok = await runHostOperation("move", onMove ? () => onMove(ids, targetFolderId) : undefined, labels.moved(ids.length));
       if (!ok) {
         rollbackSpring();
         return;
@@ -470,7 +506,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
       setPreview(null);
       dispatchDnd({ type: "RESET" });
     },
-    [canManage, clearHoverTimers, onImport, onMove, onUpload, runHostOperation, setFolderId, setSelectedIds, storageKey],
+    [canManage, clearHoverTimers, labels, onImport, onMove, onUpload, runHostOperation, setFolderId, setSelectedIds, storageKey],
   );
 
   const onInternalDragEnd = useCallback((): void => {
@@ -591,38 +627,35 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
               if (onOpenFile) {
                 actions.push({
                   id: "open",
-                  label: "Open",
+                  label: labels.open,
                   onClick: () => onOpenFile(node.id)
                 });
               }
               if (onDownloadFile) {
                 actions.push({
                   id: "download",
-                  label: "Download",
+                  label: labels.download,
                   onClick: () => handleDownloadFile(node.id)
                 });
               }
             } else if (onDownloadFolder) {
               actions.push({
                 id: "download-folder",
-                label: "Download",
+                label: labels.download,
                 onClick: () => handleDownloadFolder(node.id)
               });
             }
             if (canManage && onRename) {
               actions.push({
                 id: "rename",
-                label: "Rename",
-                onClick: () => {
-                  const name = window.prompt("Rename", node.name);
-                  if (name?.trim()) handleRename(node.id, name.trim());
-                }
+                label: labels.rename,
+                onClick: () => startRename(node.id)
               });
             }
             if (canManage && onDelete) {
               actions.push({
                 id: "delete",
-                label: "Delete",
+                label: labels.delete,
                 danger: true,
                 onClick: () => handleDelete([node.id])
               });
@@ -636,7 +669,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
         return [
           {
             id: "pin",
-            label: isFavorite ? "Unpin folder" : "Pin folder",
+            label: isFavorite ? labels.unpinFolder : labels.pinFolder,
             icon: isFavorite
               ? createElement(StarSolidIcon, { className: "rfm-star", size: 14 })
               : createElement(StarIcon, { size: 14 }),
@@ -656,9 +689,11 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
       handleDownloadFile,
       handleDownloadFolder,
       handleRename,
+      labels,
       onOpenFile,
       onRename,
       pinFolder,
+      startRename,
       storageKey
     ]
   );
@@ -669,7 +704,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     if (onOpenFile) {
       actions.push({
         id: "open",
-        label: "Open",
+        label: labels.open,
         onClick: () => {
           for (const id of selectedIds) onOpenFile(id);
         },
@@ -678,19 +713,32 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     if (canManage && onDelete) {
       actions.push({
         id: "delete",
-        label: "Delete",
+        label: labels.delete,
         danger: true,
         onClick: () => handleDelete(selectedIds),
       });
     }
     return actions;
-  }, [canManage, getBulkActions, handleDelete, onDelete, onOpenFile, selectedIds]);
+  }, [canManage, getBulkActions, handleDelete, labels, onDelete, onOpenFile, selectedIds]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>): void => {
       const targetEl = event.target as HTMLElement;
       if (targetEl.tagName === "INPUT" || targetEl.tagName === "TEXTAREA" || targetEl.isContentEditable) {
+        if (event.key === "Escape" && editingId) {
+          event.preventDefault();
+          cancelRename();
+          return;
+        }
         if (event.key === "Escape") clearSearch();
+        return;
+      }
+
+      if (editingId) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          cancelRename();
+        }
         return;
       }
 
@@ -717,6 +765,15 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
           void loadPreview(focused);
         }
         setSelectedNode(focused);
+        return;
+      }
+
+      if (event.key === "F2" && canManage && onRename) {
+        const id = selectedIds[0] ?? list[focusedIndex]?.id;
+        if (id) {
+          event.preventDefault();
+          startRename(id);
+        }
         return;
       }
 
@@ -753,7 +810,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
         handleDelete(ids);
       }
     },
-    [activateItem, canManage, clearSearch, focusedIndex, handleDelete, items, loadPreview, searchQuery, selectItem, selectedIds, setSelectedIds, springFolderId, viewItems],
+    [activateItem, canManage, cancelRename, clearSearch, editingId, focusedIndex, handleDelete, items, loadPreview, onRename, searchQuery, selectItem, selectedIds, setSelectedIds, springFolderId, startRename, viewItems],
   );
 
   return {
@@ -814,5 +871,11 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     closeContextMenu: () => setContextMenu(null),
     classNames: props.classNames,
     rootRef,
+    labels,
+    liveMessage,
+    editingId,
+    startRename,
+    commitRename,
+    cancelRename,
   };
 }

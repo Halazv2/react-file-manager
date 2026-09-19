@@ -15,7 +15,8 @@ export { defaultNodeIcon, FileTypeIcon, FolderTypeIcon } from "./fileIcons";
 export type { FileTypeIconProps, FolderTypeIconProps } from "./fileIcons";
 export { buildFilePreview, isImageExtension, isPdfExtension, isTextExtension } from "./adapters/preview";
 export { getFavoriteFolderIds, getRecentFolderIds, MAX_RECENT_FOLDERS, pushRecentFolderId, toggleFavoriteFolderId } from "./adapters/pins";
-export { formatBytes } from "./formatBytes";
+export { DEFAULT_LABELS, resolveLabels } from "./labels";
+export type { FileManagerLabels } from "./labels";
 export { folderContainsId, folderHasChildFolders, getBreadcrumbs, getExtension, getFolderContents, getNodeById, listFolder, moveNodes, searchNodes } from "./core/tree";
 export type {
   DropTargetId,

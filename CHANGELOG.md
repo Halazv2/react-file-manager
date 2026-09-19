@@ -14,6 +14,7 @@
 - Container-query layout collapse (~900px details, ~600px sidebar).
 - Add New menu portals into `.rfm-root` so CSS variables still apply.
 - File-type icons use `currentColor` / `--rfm-icon-outline`, contrast-aware chip labels, and chip-only glyphs below 28px.
+- `labels` prop, polite `aria-live` status, keyboard-navigable menus, inline rename (`data-editing`), and per-row error boundaries.
 
 ### Docs
 

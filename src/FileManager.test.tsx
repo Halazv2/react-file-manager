@@ -247,4 +247,37 @@ describe("FileManager characterization", () => {
     expect(within(folderContents()).queryByRole("option", { name: "README.md" })).toBeNull();
     expect(onSelectionChange).toHaveBeenCalledWith([]);
   });
+
+  it("renames the selected row inline instead of using a prompt", async () => {
+    const user = userEvent.setup();
+    const onRename = vi.fn();
+    const prompt = vi.spyOn(window, "prompt");
+    renderManager({ onRename, canManage: true });
+
+    await user.click(option("README.md"));
+    screen.getByLabelText("File manager").focus();
+    await user.keyboard("{F2}");
+
+    const input = screen.getByRole("textbox", { name: "Rename item" });
+    await user.clear(input);
+    await user.type(input, "hello.md{Enter}");
+
+    expect(onRename).toHaveBeenCalledWith("readme", "hello.md");
+    expect(prompt).not.toHaveBeenCalled();
+    prompt.mockRestore();
+  });
+
+  it("moves focus among menu items with arrow keys", async () => {
+    const user = userEvent.setup();
+    renderManager({ onRename: vi.fn(), onDelete: vi.fn(), canManage: true });
+
+    await user.click(screen.getByRole("button", { name: "Manage README.md" }));
+    const menu = screen.getByRole("menu");
+    const items = within(menu).getAllByRole("menuitem");
+    expect(document.activeElement).toBe(items[0]);
+    await user.keyboard("{ArrowDown}");
+    expect(document.activeElement).toBe(items[1]);
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
 });

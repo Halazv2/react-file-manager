@@ -7,6 +7,7 @@ import type {
   RefObject
 } from "react";
 
+import type { FileManagerLabels } from "./labels";
 import type {
   DropTargetId,
   FileManagerAction,
@@ -83,6 +84,12 @@ export interface FileManagerContextValue {
   closeContextMenu: () => void;
   classNames?: FileManagerClassNames;
   rootRef: RefObject<HTMLDivElement | null>;
+  labels: FileManagerLabels;
+  liveMessage: string;
+  editingId: string | null;
+  startRename: (id: string) => void;
+  commitRename: (id: string, name: string) => void;
+  cancelRename: () => void;
 }
 
 export const FileManagerContext = createContext<FileManagerContextValue | null>(

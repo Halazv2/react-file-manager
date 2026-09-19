@@ -1,6 +1,7 @@
-import { memo } from "react";
+import { memo, useEffect, useRef } from "react";
 
 import { BulkActionBar, ContextMenuLayer, MoreMenuButton } from "./ActionMenu";
+import { ItemErrorBoundary } from "./ItemErrorBoundary";
 import { defaultNodeIcon } from "../fileIcons";
 import { StarSolidIcon } from "../icons";
 import { useFileManagerContext } from "../context";
@@ -25,57 +26,107 @@ export const Item = memo(function Item({ item, index }: { item: FileManagerItem;
     resolveItemActions,
     openContextMenu,
     classNames,
+    labels,
+    editingId,
+    commitRename,
+    cancelRename,
   } = useFileManagerContext();
 
   const isSelected = selectedIds.includes(item.id);
   const isFocused = focusedIndex === index;
   const isFolder = item.kind === "folder";
   const isDropTarget = dropTargetId === item.id && isFolder;
+  const isEditing = editingId === item.id;
   const childCount = isFolder ? (item.children?.length ?? 0) : null;
   const extension = getExtension(item);
   const actions = resolveItemActions(item);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isEditing) return;
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, [isEditing]);
 
   return (
-    <div className="rfm-row">
-      <div
-        draggable={canManage}
-        role="option"
-        aria-selected={isSelected}
-        aria-label={item.name}
-        data-view={view}
-        data-kind={item.kind}
-        data-focused={isFocused || undefined}
-        data-drop-target={isDropTarget || undefined}
-        className={cn("rfm-item", classNames?.item)}
-        onDragStart={(event) => onDragStart(item, event)}
-        {...(isFolder ? folderDropHandlers(item.id) : {})}
-        onClick={(event) => selectItem(item, event)}
-        onDoubleClick={() => activateItem(item)}
-        onContextMenu={(event) => openContextMenu(item, event)}>
-        {renderIcon?.(item, view === "cards" ? 36 : 18) ?? defaultNodeIcon(item, view === "cards" ? 36 : 18)}
-        <span className="rfm-item-name">
-          <span className="rfm-item-label" data-view={view}>{item.name}</span>
-          {item.path && <span className="rfm-item-path">{item.path}</span>}
-        </span>
-        {view === "list" && (
-          <span className="rfm-item-meta">
-            {isFolder ? `${childCount} item${childCount === 1 ? "" : "s"}` : formatBytes(item.size) || (extension || "file").toUpperCase()}
+    <ItemErrorBoundary itemId={item.id} fallback={<div className="rfm-row" role="option" aria-label={item.name} />}>
+      <div className="rfm-row">
+        <div
+          draggable={canManage && !isEditing}
+          role="option"
+          aria-selected={isSelected}
+          aria-label={item.name}
+          data-view={view}
+          data-kind={item.kind}
+          data-focused={isFocused || undefined}
+          data-drop-target={isDropTarget || undefined}
+          data-editing={isEditing || undefined}
+          className={cn("rfm-item", classNames?.item)}
+          onDragStart={(event) => onDragStart(item, event)}
+          {...(isFolder ? folderDropHandlers(item.id) : {})}
+          onClick={(event) => {
+            if (isEditing) return;
+            selectItem(item, event);
+          }}
+          onDoubleClick={() => {
+            if (isEditing) return;
+            activateItem(item);
+          }}
+          onContextMenu={(event) => openContextMenu(item, event)}>
+          {renderIcon?.(item, view === "cards" ? 36 : 18) ?? defaultNodeIcon(item, view === "cards" ? 36 : 18)}
+          <span className="rfm-item-name">
+            {isEditing ? (
+              <input
+                ref={inputRef}
+                className="rfm-rename-input"
+                aria-label={labels.renameInput}
+                defaultValue={item.name}
+                data-editing=""
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => {
+                  event.stopPropagation();
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    commitRename(item.id, event.currentTarget.value);
+                  }
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    cancelRename();
+                  }
+                }}
+                onBlur={(event) => commitRename(item.id, event.currentTarget.value)}
+              />
+            ) : (
+              <>
+                <span className="rfm-item-label" data-view={view}>
+                  {item.name}
+                </span>
+                {item.path && <span className="rfm-item-path">{item.path}</span>}
+              </>
+            )}
           </span>
-        )}
-        {renderActions ? (
-          <span className="rfm-more" data-view={view}>{renderActions(item)}</span>
-        ) : (
-          <span className="rfm-more" data-view={view}>
-            <MoreMenuButton actions={actions} label={`Manage ${item.name}`} />
-          </span>
-        )}
+          {view === "list" && !isEditing && (
+            <span className="rfm-item-meta">
+              {isFolder ? labels.itemsCount(childCount ?? 0) : formatBytes(item.size) || (extension || labels.file).toUpperCase()}
+            </span>
+          )}
+          {renderActions ? (
+            <span className="rfm-more" data-view={view}>
+              {renderActions(item)}
+            </span>
+          ) : (
+            <span className="rfm-more" data-view={view}>
+              <MoreMenuButton actions={actions} label={labels.manageItem(item.name)} />
+            </span>
+          )}
+        </div>
       </div>
-    </div>
+    </ItemErrorBoundary>
   );
 });
 
 export function FolderTree({ folders, depth = 0 }: { folders: FileManagerItem[]; depth?: number }) {
-  const { viewFolderId, dropTargetId, expandedIds, favoriteIds, openFolder, toggleExpanded, folderDropHandlers, renderIcon, renderActions, resolveItemActions, openContextMenu, classNames } =
+  const { viewFolderId, dropTargetId, expandedIds, favoriteIds, openFolder, toggleExpanded, folderDropHandlers, renderIcon, renderActions, resolveItemActions, openContextMenu, classNames, labels } =
     useFileManagerContext();
 
   return (
@@ -107,7 +158,7 @@ export function FolderTree({ folders, depth = 0 }: { folders: FileManagerItem[];
                 <button
                   type="button"
                   className="rfm-tree-chevron"
-                  aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
+                  aria-label={isExpanded ? labels.collapseFolder : labels.expandFolder}
                   aria-expanded={hasChildren ? isExpanded : undefined}
                   disabled={!hasChildren}
                   onClick={(event) => {
@@ -123,7 +174,7 @@ export function FolderTree({ folders, depth = 0 }: { folders: FileManagerItem[];
                   {folder.name}
                 </span>
                 {isFavorite && <StarSolidIcon className="rfm-star" size={14} />}
-                {renderActions ? <span className="rfm-more">{renderActions(folder)}</span> : <MoreMenuButton actions={actions} label={`Manage ${folder.name}`} />}
+                {renderActions ? <span className="rfm-more">{renderActions(folder)}</span> : <MoreMenuButton actions={actions} label={labels.manageItem(folder.name)} />}
               </div>
               {hasChildren && isExpanded && (
                 <div>

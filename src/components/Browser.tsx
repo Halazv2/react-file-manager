@@ -16,7 +16,7 @@ const CARD_MIN_WIDTH = 170;
 const VIRTUALIZE_AFTER = 40;
 
 export function Browser() {
-  const { view, searchQuery, canManage, isBusy, items, viewItems, viewFolderId, folderId, setView, setSearchQuery, onDropOnFolder, onUpload, fileInputRef, classNames } =
+  const { view, searchQuery, canManage, isBusy, items, viewItems, viewFolderId, folderId, setView, setSearchQuery, onDropOnFolder, onUpload, fileInputRef, classNames, labels } =
     useFileManagerContext();
 
   const showingSpring = viewItems !== items;
@@ -42,17 +42,17 @@ export function Browser() {
             <input
               type="search"
               value={searchQuery}
-              placeholder="Search"
-              aria-label="Search files"
+              placeholder={labels.search}
+              aria-label={labels.searchAria}
               className="rfm-search-field"
               onChange={(event) => setSearchQuery(event.target.value)}
             />
           </label>
           <div>
-            <ViewToggle label="List view" pressed={view === "list"} onClick={() => setView("list")}>
+            <ViewToggle label={labels.listView} pressed={view === "list"} onClick={() => setView("list")}>
               <ListIcon size={16} />
             </ViewToggle>
-            <ViewToggle label="Card view" pressed={view === "cards"} onClick={() => setView("cards")}>
+            <ViewToggle label={labels.cardView} pressed={view === "cards"} onClick={() => setView("cards")}>
               <CardsIcon size={16} />
             </ViewToggle>
           </div>
@@ -62,7 +62,7 @@ export function Browser() {
       <div className="rfm-browser-body">
         <ItemGrid
           items={visible}
-          emptyLabel={searchQuery.trim() && !showingSpring ? "No matching files" : "This folder is empty"}
+          emptyLabel={searchQuery.trim() && !showingSpring ? labels.noMatchingFiles : labels.emptyFolder}
           showEmptyActions={!searchQuery.trim() || showingSpring}
           folderId={showingSpring ? viewFolderId : folderId}
           isBusy={isBusy}
@@ -76,7 +76,7 @@ export function Browser() {
           type="file"
           multiple
           className="rfm-hidden-input"
-          aria-label="Upload files"
+          aria-label={labels.uploadFiles}
           onChange={(event) => {
             if (event.target.files?.length) {
               void onUpload(Array.from(event.target.files), folderId);
@@ -102,7 +102,7 @@ function ItemGrid({
   folderId: string | null;
   isBusy: boolean;
 }) {
-  const { view, canManage, onCreateFolder, fileInputRef } = useFileManagerContext();
+  const { view, canManage, onCreateFolder, fileInputRef, labels } = useFileManagerContext();
   const parentRef = useRef<HTMLDivElement>(null);
   const [viewportWidth, setViewportWidth] = useState(0);
   const cardColumns = Math.max(1, Math.floor(Math.max(viewportWidth - 24, CARD_MIN_WIDTH) / CARD_MIN_WIDTH));
@@ -140,19 +140,19 @@ function ItemGrid({
             <div className="rfm-empty-actions">
               <button type="button" className="rfm-button rfm-button-primary" onClick={() => fileInputRef.current?.click()}>
                 <UploadIcon size={16} />
-                Upload files
+                {labels.uploadFiles}
               </button>
               {onCreateFolder && (
                 <button type="button" className="rfm-button rfm-button-secondary" onClick={() => onCreateFolder(folderId)}>
                   <FolderIcon size={16} />
-                  Create folder
+                  {labels.createFolder}
                 </button>
               )}
             </div>
           )}
         </div>
       ) : useListVirtual ? (
-        <div className="rfm-item-virtual" style={{ height: `${rowVirtualizer.getTotalSize()}px` }} role="listbox" aria-label="Folder contents">
+        <div className="rfm-item-virtual" style={{ height: `${rowVirtualizer.getTotalSize()}px` }} role="listbox" aria-label={labels.folderContents}>
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
             const item = items[virtualRow.index];
             if (!item) return null;
@@ -175,7 +175,7 @@ function ItemGrid({
           })}
         </div>
       ) : useCardVirtual ? (
-        <div className="rfm-item-virtual" style={{ height: `${rowVirtualizer.getTotalSize()}px` }} role="listbox" aria-label="Folder contents">
+        <div className="rfm-item-virtual" style={{ height: `${rowVirtualizer.getTotalSize()}px` }} role="listbox" aria-label={labels.folderContents}>
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
             const start = virtualRow.index * cardColumns;
             const rowItems = items.slice(start, start + cardColumns);
@@ -201,7 +201,7 @@ function ItemGrid({
           })}
         </div>
       ) : (
-        <div className={view === "cards" ? "rfm-item-grid" : "rfm-item-list"} role="listbox" aria-label="Folder contents">
+        <div className={view === "cards" ? "rfm-item-grid" : "rfm-item-list"} role="listbox" aria-label={labels.folderContents}>
           {items.map((item, index) => (
             <Item key={item.id} item={item} index={index} />
           ))}

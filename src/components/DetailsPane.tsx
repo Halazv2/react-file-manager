@@ -6,7 +6,7 @@ import { cn } from "../styles";
 import { getExtension } from "../core/tree";
 
 export function DetailsPane() {
-  const { selectedNode, renderIcon, renderPreview, renderActions, preview, isPreviewLoading, favoriteIds, toggleFavorite, storageKey, onOpenFile, onDownloadFile, canManage, classNames } =
+  const { selectedNode, renderIcon, renderPreview, renderActions, preview, isPreviewLoading, favoriteIds, toggleFavorite, storageKey, onOpenFile, onDownloadFile, canManage, classNames, labels } =
     useFileManagerContext();
 
   if (renderPreview) {
@@ -22,8 +22,8 @@ export function DetailsPane() {
       <aside className={cn("rfm-details", classNames?.details)}>
         <div className="rfm-details-empty">
           {renderIcon?.({ id: "empty", name: "", kind: "folder" }, 56) ?? defaultNodeIcon({ id: "empty", name: "", kind: "folder" }, 56)}
-          <p>Select a file or folder to view details</p>
-          <p className="rfm-details-hint">↑↓ navigate · Shift range · ⌘/Ctrl toggle · Enter open · Esc clear</p>
+          <p>{labels.detailsEmpty}</p>
+          <p className="rfm-details-hint">{labels.keyboardHint}</p>
         </div>
       </aside>
     );
@@ -40,25 +40,25 @@ export function DetailsPane() {
       <div className="rfm-details-body">
         <div className="rfm-preview-stage">
           {isPreviewLoading ? (
-            <span className="rfm-item-meta">Loading preview…</span>
+            <span className="rfm-item-meta">{labels.loadingPreview}</span>
           ) : canShowThumb ? (
             <figure>
               <div style={{ position: "relative" }}>
                 <img src={preview?.url || ""} alt={selectedNode.name} className="rfm-preview-image" />
                 {preview?.pages !== undefined && (
                   <span className="rfm-bulk-bar" style={{ position: "absolute", insetBlockEnd: -8, insetInlineEnd: 8, transform: "none", left: "auto", bottom: "auto" }}>
-                    {preview.pages} page{preview.pages === 1 ? "" : "s"}
+                    {labels.pagesCount(preview.pages)}
                   </span>
                 )}
               </div>
-              {preview?.kind === "pdf" && <figcaption className="rfm-item-meta">First page preview</figcaption>}
+              {preview?.kind === "pdf" && <figcaption className="rfm-item-meta">{labels.firstPagePreview}</figcaption>}
             </figure>
           ) : showTextPreview ? (
             <pre className="rfm-preview-text">{preview?.text}</pre>
           ) : (
             <>
               {renderIcon?.(selectedNode, 64) ?? defaultNodeIcon(selectedNode, 64)}
-              <span className="rfm-item-meta">{isFolder ? `${childCount} item${childCount === 1 ? "" : "s"}` : (extension || "file").toUpperCase()}</span>
+              <span className="rfm-item-meta">{isFolder ? labels.itemsCount(childCount) : (extension || labels.file).toUpperCase()}</span>
             </>
           )}
         </div>
@@ -68,25 +68,25 @@ export function DetailsPane() {
           {selectedNode.path && <p className="rfm-item-meta">{selectedNode.path}</p>}
           <dl className="rfm-details-dl">
             <div className="rfm-details-row">
-              <dt>Type</dt>
-              <dd>{isFolder ? "Folder" : (extension || "file").toUpperCase()}</dd>
+              <dt>{labels.type}</dt>
+              <dd>{isFolder ? labels.folder : (extension || labels.file).toUpperCase()}</dd>
             </div>
             {isFolder ? (
               <div className="rfm-details-row">
-                <dt>Items</dt>
+                <dt>{labels.items}</dt>
                 <dd>{childCount}</dd>
               </div>
             ) : (
               <>
                 {formatBytes(selectedNode.size) ? (
                   <div className="rfm-details-row">
-                    <dt>Size</dt>
+                    <dt>{labels.size}</dt>
                     <dd>{formatBytes(selectedNode.size)}</dd>
                   </div>
                 ) : null}
                 {preview?.pages !== undefined && (
                   <div className="rfm-details-row">
-                    <dt>Pages</dt>
+                    <dt>{labels.pages}</dt>
                     <dd>{preview.pages}</dd>
                   </div>
                 )}
@@ -99,19 +99,19 @@ export function DetailsPane() {
           ) : isFolder && storageKey ? (
             <button type="button" className="rfm-button rfm-button-secondary" style={{ width: "100%", marginBlockStart: 12 }} onClick={(event) => toggleFavorite(event, selectedNode.id)}>
               {favoriteIds.includes(selectedNode.id) ? <StarSolidIcon className="rfm-star" size={16} /> : <StarIcon size={16} />}
-              {favoriteIds.includes(selectedNode.id) ? "Pinned" : "Pin"}
+              {favoriteIds.includes(selectedNode.id) ? labels.pinned : labels.pin}
             </button>
           ) : (
             <div className="rfm-details-actions">
               {onOpenFile && (
                 <button type="button" className="rfm-button rfm-button-primary" onClick={() => onOpenFile(selectedNode.id)}>
-                  View
+                  {labels.view}
                 </button>
               )}
               {onDownloadFile && canManage !== false && (
                 <button type="button" className="rfm-button rfm-button-secondary" onClick={() => void onDownloadFile(selectedNode.id)}>
                   <DownloadIcon size={16} />
-                  Download
+                  {labels.download}
                 </button>
               )}
             </div>
