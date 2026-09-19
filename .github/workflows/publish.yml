@@ -29,6 +29,9 @@ jobs:
           package-manager-cache: false
           registry-url: https://registry.npmjs.org
 
+      - name: Update npm
+        run: npm install --global npm@latest
+
       - name: Install
         run: npm ci
 
@@ -43,8 +46,6 @@ jobs:
 
       - name: Publish to npm
         run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       
       - name: Setup Node for GitHub Packages
         uses: actions/setup-node@v5
