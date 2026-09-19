@@ -20,26 +20,38 @@ npm install @halazv2/react-file-manager
 
 Peer dependencies: `react` and `react-dom` ≥ 18. Optional peer: `pdfjs-dist` ≥ 4 (PDF first-page thumbnails).
 
-### Styling
+### Styling (three layers)
 
-Import the published stylesheet **before** Tailwind if the host also uses Tailwind v4 (`@layer rfm` otherwise ranks above utilities):
+Anything else (utility classes, extra BEM modifiers) is internal.
+
+1. **CSS variables** on `.rfm-root` — theming  
+2. **`aria-*` / `data-*`** — state (`aria-selected`, `aria-pressed`, `aria-expanded`, `aria-busy`, `data-theme`, `data-focused`, `data-drop-target`, `data-view`, `data-kind`)  
+3. **`classNames` slots + root `className` / `style`** — escape hatch  
+
+Import the published stylesheet **before** Tailwind v4, or declare `@layer rfm, theme, base, components, utilities;` first. A `@layer rfm` sheet imported *after* Tailwind ranks above `@layer utilities` and would beat `className="p-8"`.
 
 ```ts
 import "@halazv2/react-file-manager/styles.css";
 ```
 
-Theme with CSS variables on `.rfm-root`:
-
 ```css
+@layer rfm, theme, base, components, utilities;
+@import "@halazv2/react-file-manager/styles.css";
+@import "tailwindcss";
+
 .rfm-root {
   --rfm-accent: #0f766e;
   --rfm-selected: color-mix(in srgb, var(--rfm-accent) 12%, transparent);
-  --rfm-surface: #ffffff;
-  --rfm-text-muted: #6b7280;
+}
+
+.rfm-item[aria-selected="true"] {
+  box-shadow: inset 0 0 0 1px var(--rfm-accent);
 }
 ```
 
-Pass `theme="dark"` or `theme="light"` to set `data-theme` on the root (omit for system preference).
+Tokens (defaults on `:where(.rfm-root)`): `--rfm-accent`, `--rfm-accent-fg`, `--rfm-surface`, `--rfm-surface-sunken`, `--rfm-surface-hover`, `--rfm-selected`, `--rfm-text`, `--rfm-text-muted`, `--rfm-border`, `--rfm-danger`, `--rfm-radius`, `--rfm-radius-sm`, `--rfm-font`, `--rfm-font-size`, `--rfm-font-size-sm`, `--rfm-sidebar-width`, `--rfm-details-width`, `--rfm-row-height`, `--rfm-duration`, `--rfm-icon-accent`, `--rfm-icon-outline`, `--rfm-star`, `--rfm-shadow`.
+
+Pass `theme="dark"` or `theme="light"` to set `data-theme` on the root (omit for `prefers-color-scheme`).
 
 ## Quick start
 
@@ -134,11 +146,31 @@ export function mapLibraryToNodes(nodes: LibraryNode[]): FileManagerNode[] {
 
 ## Props
 
+Every `FileManagerProps` field:
+
 | Prop | Type | Notes |
 | --- | --- | --- |
 | `nodes` | `FileManagerNode[]` | Nested tree. Root is implied. |
-| `folderId` / `defaultFolderId` | `string \| null` | Current folder. `null` is root. |
-| `storageKey` | `string` | Pins / recents localStorage key. |
+| `folderId` | `string \| null` | Controlled current folder. `null` is root. |
+| `defaultFolderId` | `string \| null` | Uncontrolled initial folder. |
+| `onFolderChange` | `(id: string \| null) => void` | Fired when the current folder changes. |
+| `selectedIds` | `string[]` | Controlled selection. |
+| `defaultSelectedIds` | `string[]` | Uncontrolled initial selection. |
+| `onSelectionChange` | `(ids: string[]) => void` | Fired when selection changes. |
+| `view` | `"list" \| "cards"` | Controlled browser view. |
+| `defaultView` | `"list" \| "cards"` | Uncontrolled initial view. Default `list`. |
+| `onViewChange` | `(view) => void` | Fired when the view toggle changes. |
+| `searchQuery` | `string` | Controlled search string. |
+| `defaultSearchQuery` | `string` | Uncontrolled initial search. |
+| `onSearchChange` | `(query: string) => void` | Fired as the search field changes. |
+| `onOpenFolder` | `(id: string \| null) => void` | Fired when a folder is opened (sidebar, double-click, Enter). |
+| `rootLabel` | `string` | Label for the implied root. Default `"My files"`. |
+| `className` | `string` | Extra class on `.rfm-root`. |
+| `style` | `CSSProperties` | Inline style on `.rfm-root`. |
+| `theme` | `"light" \| "dark"` | Sets `data-theme` on the root. Omit for `prefers-color-scheme`. |
+| `classNames` | `FileManagerClassNames` | Slot classes: `root`, `layout`, `sidebar`, `browser`, `details`, `item`, `treeRow`, `toolbar`, `search`, `menu`, `more`, `bulkBar`, `iconButton`, `viewToggle`. |
+| `isBusy` | `boolean` | Shows the in-pane busy overlay (`aria-busy`). |
+| `storageKey` | `string` | Pins / recents localStorage key prefix. |
 | `onMove` | `(ids, folderId) => void` | Fired on drop. Use `moveNodes` for local state. |
 | `onOpenFile` | `(id) => void` | Double-click or Enter on a file. |
 | `onGetPreviewUrl` | `(id) => string \| null \| Promise<…>` | Preview URL for details pane. |
@@ -146,7 +178,7 @@ export function mapLibraryToNodes(nodes: LibraryNode[]): FileManagerNode[] {
 | `onImport` | `(items, folderId) => void` | OS folder (and mixed) drops as a tree. Prefer this to create folders instead of documents. |
 | `onCreateFolder` | `(parentId) => void` | New folder action. |
 | `onCreateFile` | `(folderId) => void` | Optional “new document” entry. |
-| `onRename` | `(id, name) => void` | Inline / menu rename. |
+| `onRename` | `(id, name) => void` | Menu rename (`window.prompt` today). |
 | `onDownloadFile` / `onDownloadFolder` | `(id) => void` | Download hooks. |
 | `onDelete` | `(ids) => void` | Delete / Backspace. |
 | `getItemActions` | `(node) => FileManagerAction[]` | Context / more menu items. |
@@ -154,8 +186,8 @@ export function mapLibraryToNodes(nodes: LibraryNode[]): FileManagerNode[] {
 | `canManage` | `boolean` | Disables drag, drop, and mutations. Default `true`. |
 | `enablePreview` | `boolean` | Default `true` when `onGetPreviewUrl` is set. |
 | `springLoadDelay` | `number` | Hover delay in ms. Default `500`. |
-| `showDetails` | `boolean` | Inspector pane. Default `true`. |
-| `renderIcon` | `(node) => ReactNode` | Override built-in icons. |
+| `showDetails` | `boolean` | Inspector pane. Default `true`. Collapses below ~900px via container queries. |
+| `renderIcon` | `(node, size?) => ReactNode` | Override built-in icons. |
 | `renderPreview` | `(node) => ReactNode` | Replace the details pane. |
 | `renderActions` | `(node) => ReactNode` | Extra per-item actions. |
 
@@ -191,12 +223,24 @@ type FileManagerDropItem =
 type FileManagerAction = {
   id: string;
   label: string;
-  onClick: () => void;
+  onClick: () => void | Promise<void>;
   disabled?: boolean;
   danger?: boolean;
-  separator?: boolean;
+  icon?: ReactNode;
 };
 ```
+
+## Next.js / SSR
+
+The package entry is a Client Component (`"use client"`). In the App Router, import `FileManager` from a client module.
+
+`storageKey` pin/recent helpers no-op when `window` is undefined (SSR). They read `localStorage` only in the browser.
+
+## Known limitations
+
+- **Touch drag-and-drop** is not implemented yet. Internal moves use HTML5 `draggable` (mouse / trackpad). Touch support is planned.
+- Card view is not virtualized (list view is, after 40 items).
+- Host callback rejections (`onMove`, `onRename`, …) are not surfaced yet.
 
 ## Roadmap
 
