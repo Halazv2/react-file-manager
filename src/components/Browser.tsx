@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { Breadcrumbs } from "./Breadcrumbs";
@@ -11,6 +11,8 @@ import { cn } from "../styles";
 import type { FileManagerItem } from "../types";
 
 const LIST_ROW_HEIGHT = 40;
+const CARD_ROW_HEIGHT = 140;
+const CARD_MIN_WIDTH = 170;
 const VIRTUALIZE_AFTER = 40;
 
 export function Browser() {
@@ -102,12 +104,29 @@ function ItemGrid({
 }) {
   const { view, canManage, onCreateFolder, fileInputRef } = useFileManagerContext();
   const parentRef = useRef<HTMLDivElement>(null);
-  const useVirtual = view === "list" && items.length >= VIRTUALIZE_AFTER;
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const cardColumns = Math.max(1, Math.floor(Math.max(viewportWidth - 24, CARD_MIN_WIDTH) / CARD_MIN_WIDTH));
+  const useListVirtual = view === "list" && items.length >= VIRTUALIZE_AFTER;
+  const useCardVirtual = view === "cards" && items.length >= VIRTUALIZE_AFTER;
+  const cardRows = Math.ceil(items.length / cardColumns);
+
+  useEffect(() => {
+    const element = parentRef.current;
+    if (!element || typeof ResizeObserver === "undefined") {
+      if (element) setViewportWidth(element.clientWidth);
+      return;
+    }
+    const update = () => setViewportWidth(element.clientWidth);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [view, items.length]);
 
   const rowVirtualizer = useVirtualizer({
-    count: useVirtual ? items.length : 0,
+    count: useListVirtual ? items.length : useCardVirtual ? cardRows : 0,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => LIST_ROW_HEIGHT,
+    estimateSize: () => (view === "cards" ? CARD_ROW_HEIGHT : LIST_ROW_HEIGHT),
     overscan: 10,
   });
 
@@ -132,7 +151,7 @@ function ItemGrid({
             </div>
           )}
         </div>
-      ) : useVirtual ? (
+      ) : useListVirtual ? (
         <div className="rfm-item-virtual" style={{ height: `${rowVirtualizer.getTotalSize()}px` }} role="listbox" aria-label="Folder contents">
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
             const item = items[virtualRow.index];
@@ -151,6 +170,32 @@ function ItemGrid({
                   transform: `translateY(${virtualRow.start}px)`,
                 }}>
                 <Item item={item} index={virtualRow.index} />
+              </div>
+            );
+          })}
+        </div>
+      ) : useCardVirtual ? (
+        <div className="rfm-item-virtual" style={{ height: `${rowVirtualizer.getTotalSize()}px` }} role="listbox" aria-label="Folder contents">
+          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+            const start = virtualRow.index * cardColumns;
+            const rowItems = items.slice(start, start + cardColumns);
+            return (
+              <div
+                key={virtualRow.key}
+                data-index={virtualRow.index}
+                ref={rowVirtualizer.measureElement}
+                className="rfm-item-grid"
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  transform: `translateY(${virtualRow.start}px)`,
+                  gridTemplateColumns: `repeat(${cardColumns}, minmax(0, 1fr))`,
+                }}>
+                {rowItems.map((item, offset) => (
+                  <Item key={item.id} item={item} index={start + offset} />
+                ))}
               </div>
             );
           })}
