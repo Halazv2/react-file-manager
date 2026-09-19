@@ -1,4 +1,5 @@
 import { defaultNodeIcon } from "../fileIcons";
+import { formatBytes } from "../formatBytes";
 import { DownloadIcon, StarIcon, StarSolidIcon } from "../icons";
 import { useFileManagerContext } from "../context";
 import { cn } from "../styles";
@@ -76,12 +77,20 @@ export function DetailsPane() {
                 <dd>{childCount}</dd>
               </div>
             ) : (
-              preview?.pages !== undefined && (
-                <div className="rfm-details-row">
-                  <dt>Pages</dt>
-                  <dd>{preview.pages}</dd>
-                </div>
-              )
+              <>
+                {formatBytes(selectedNode.size) ? (
+                  <div className="rfm-details-row">
+                    <dt>Size</dt>
+                    <dd>{formatBytes(selectedNode.size)}</dd>
+                  </div>
+                ) : null}
+                {preview?.pages !== undefined && (
+                  <div className="rfm-details-row">
+                    <dt>Pages</dt>
+                    <dd>{preview.pages}</dd>
+                  </div>
+                )}
+              </>
             )}
           </dl>
 

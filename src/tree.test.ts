@@ -42,6 +42,19 @@ describe("tree helpers", () => {
     ]);
   });
 
+  it("sorts files by size when requested", () => {
+    const sized: FileManagerNode[] = [
+      { id: "big", name: "big.bin", kind: "file", size: 200 },
+      { id: "small", name: "small.bin", kind: "file", size: 10 },
+      { id: "folder", name: "Zed", kind: "folder", children: [] }
+    ];
+    expect(listFolder(sized, null, { sortBy: "size" }).map((node) => node.id)).toEqual([
+      "folder",
+      "small",
+      "big"
+    ]);
+  });
+
   it("builds breadcrumbs", () => {
     expect(getBreadcrumbs(tree, "contracts").map((node) => node.id)).toEqual([
       "docs",

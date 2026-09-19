@@ -101,13 +101,21 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     if (deferredSearch.trim() && springFolderId === undefined) {
       return searchNodes(nodes, deferredSearch, rootLabel);
     }
-    return listFolder(nodes, folderId);
-  }, [deferredSearch, folderId, nodes, rootLabel, springFolderId]);
+    return listFolder(nodes, folderId, {
+      sortBy: props.sortBy,
+      sortDirection: props.sortDirection,
+      sortComparator: props.sortComparator,
+    });
+  }, [deferredSearch, folderId, nodes, props.sortBy, props.sortComparator, props.sortDirection, rootLabel, springFolderId]);
 
   const viewItems = useMemo(() => {
     if (springFolderId === undefined) return items;
-    return listFolder(nodes, springFolderId);
-  }, [items, nodes, springFolderId]);
+    return listFolder(nodes, springFolderId, {
+      sortBy: props.sortBy,
+      sortDirection: props.sortDirection,
+      sortComparator: props.sortComparator,
+    });
+  }, [items, nodes, props.sortBy, props.sortComparator, props.sortDirection, springFolderId]);
 
   const breadcrumbs = useMemo(() => getBreadcrumbs(nodes, viewFolderId), [nodes, viewFolderId]);
 

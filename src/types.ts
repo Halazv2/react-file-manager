@@ -20,6 +20,8 @@ export interface FileManagerNode {
   meta?: Record<string, unknown>;
 }
 
+export type FileManagerSortBy = "name" | "size" | "kind";
+
 export type FileManagerItem = FileManagerNode & {
   path?: string;
 };
@@ -84,6 +86,9 @@ export interface FileManagerProps {
   showDetails?: boolean;
   springLoadDelay?: number;
   isBusy?: boolean;
+  sortBy?: FileManagerSortBy;
+  sortDirection?: "asc" | "desc";
+  sortComparator?: (a: FileManagerNode, b: FileManagerNode) => number;
   /** localStorage key prefix for pins/recents. */
   storageKey?: string;
   enablePreview?: boolean;

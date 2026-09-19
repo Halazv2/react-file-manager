@@ -1,4 +1,4 @@
-import type { FileManagerItem, FileManagerNode } from "./types";
+import type { FileManagerItem, FileManagerNode, FileManagerSortBy } from "./types";
 
 export function getNodeById(
   nodes: FileManagerNode[],
@@ -31,14 +31,40 @@ export function getFolderContents(
   return getNodeById(nodes, folderId)?.children ?? [];
 }
 
+export function compareFolderEntries(
+  a: FileManagerNode,
+  b: FileManagerNode,
+  sortBy: FileManagerSortBy = "name",
+  sortDirection: "asc" | "desc" = "asc"
+): number {
+  const direction = sortDirection === "desc" ? -1 : 1;
+  if (sortBy === "kind") {
+    if (a.kind !== b.kind) return a.kind === "folder" ? -1 * direction : 1 * direction;
+    return a.name.localeCompare(b.name) * direction;
+  }
+  if (a.kind !== b.kind) return a.kind === "folder" ? -1 : 1;
+  if (sortBy === "size") {
+    return ((a.size ?? 0) - (b.size ?? 0)) * direction;
+  }
+  return a.name.localeCompare(b.name) * direction;
+}
+
 export function listFolder(
   nodes: FileManagerNode[],
-  folderId: string | null
+  folderId: string | null,
+  options?: {
+    sortBy?: FileManagerSortBy;
+    sortDirection?: "asc" | "desc";
+    sortComparator?: (a: FileManagerNode, b: FileManagerNode) => number;
+  }
 ): FileManagerNode[] {
-  return [...getFolderContents(nodes, folderId)].sort((a, b) => {
-    if (a.kind !== b.kind) return a.kind === "folder" ? -1 : 1;
-    return a.name.localeCompare(b.name);
-  });
+  const entries = [...getFolderContents(nodes, folderId)];
+  if (options?.sortComparator) {
+    return entries.sort(options.sortComparator);
+  }
+  return entries.sort((a, b) =>
+    compareFolderEntries(a, b, options?.sortBy, options?.sortDirection)
+  );
 }
 
 export function getBreadcrumbs(

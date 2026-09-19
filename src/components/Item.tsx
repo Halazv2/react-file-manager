@@ -4,6 +4,7 @@ import { StarSolidIcon } from "../icons";
 import { useFileManagerContext } from "../context";
 import { cn } from "../styles";
 import { folderHasChildFolders, getExtension } from "../tree";
+import { formatBytes } from "../formatBytes";
 import type { FileManagerItem } from "../types";
 
 export function Item({ item, index }: { item: FileManagerItem; index: number }) {
@@ -55,7 +56,9 @@ export function Item({ item, index }: { item: FileManagerItem; index: number }) 
           {item.path && <span className="rfm-item-path">{item.path}</span>}
         </span>
         {view === "list" && (
-          <span className="rfm-item-meta">{isFolder ? `${childCount} item${childCount === 1 ? "" : "s"}` : (extension || "file").toUpperCase()}</span>
+          <span className="rfm-item-meta">
+            {isFolder ? `${childCount} item${childCount === 1 ? "" : "s"}` : formatBytes(item.size) || (extension || "file").toUpperCase()}
+          </span>
         )}
         {renderActions ? (
           <span className="rfm-more" data-view={view}>{renderActions(item)}</span>
