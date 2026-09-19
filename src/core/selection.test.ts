@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { idsInRange } from "./selection";
-import type { FileManagerItem } from "./types";
+import type { FileManagerItem } from "../types";
 
 const items: FileManagerItem[] = [
   { id: "a", name: "A", kind: "folder" },

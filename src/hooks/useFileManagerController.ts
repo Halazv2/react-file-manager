@@ -1,17 +1,17 @@
 import { createElement, useCallback, useDeferredValue, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
 
-import type { FileManagerContextValue } from "./context";
-import { FILE_MANAGER_DRAG_MIME, isInternalFileManagerDrag, planExternalDrop, readDataTransferItems } from "./droppedItems";
-import { DND_IDLE, dndReducer, isDndActive } from "./dndMachine";
-import { folderDropTargetHandlers } from "./dropTarget";
-import { StarIcon, StarSolidIcon } from "./icons";
-import { getFavoriteFolderIds, getRecentFolderIds, MAX_RECENT_FOLDERS, pushRecentFolderId, toggleFavoriteFolderId } from "./pins";
-import { buildFilePreview } from "./preview";
-import { idsInRange } from "./selection";
-import { folderHasChildFolders, getExtension, listFolder, searchNodes } from "./tree";
-import { breadcrumbsFromIndex, buildTreeIndex, folderContainsIdInIndex, getIndexedNode } from "./treeIndex";
-import type { DropTargetId, FileManagerAction, FileManagerItem, FileManagerProps, FileManagerView, FilePreviewResult } from "./types";
+import type { FileManagerContextValue } from "../context";
+import { FILE_MANAGER_DRAG_MIME, isInternalFileManagerDrag, planExternalDrop, readDataTransferItems } from "../core/droppedItems";
+import { DND_IDLE, dndReducer, isDndActive } from "../core/dndMachine";
+import { folderDropTargetHandlers } from "../adapters/dropTarget";
+import { StarIcon, StarSolidIcon } from "../icons";
+import { getFavoriteFolderIds, getRecentFolderIds, MAX_RECENT_FOLDERS, pushRecentFolderId, toggleFavoriteFolderId } from "../adapters/pins";
+import { buildFilePreview } from "../adapters/preview";
+import { idsInRange } from "../core/selection";
+import { folderHasChildFolders, getExtension, listFolder, searchNodes } from "../core/tree";
+import { breadcrumbsFromIndex, buildTreeIndex, folderContainsIdInIndex, getIndexedNode } from "../core/treeIndex";
+import type { DropTargetId, FileManagerAction, FileManagerItem, FileManagerProps, FileManagerView, FilePreviewResult } from "../types";
 
 function useControllableState<T>(controlled: T | undefined, defaultValue: T, onChange?: (value: T) => void): [T, (value: T) => void] {
   const [uncontrolled, setUncontrolled] = useState(defaultValue);
@@ -72,7 +72,11 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [dropTargetId, setDropTargetId] = useState<DropTargetId>(null);
   const [springFolderId, setSpringFolderId] = useState<string | null | undefined>(undefined);
-  const [favoriteIds, setFavoriteIds] = useState<string[]>(() => (storageKey ? getFavoriteFolderIds(storageKey) : []));
+  const [favoriteIds, setFavoriteIds] = useControllableState(
+    props.favoriteIds,
+    props.defaultFavoriteIds ?? (storageKey ? getFavoriteFolderIds(storageKey) : []),
+    props.onFavoritesChange,
+  );
   const [recentIds, setRecentIds] = useState<string[]>(() => (storageKey ? getRecentFolderIds(storageKey) : []));
   const [preview, setPreview] = useState<FilePreviewResult | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -125,7 +129,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
   const breadcrumbs = useMemo(() => breadcrumbsFromIndex(treeIndex, viewFolderId), [treeIndex, viewFolderId]);
 
   const pinnedFolders = useMemo(() => {
-    if (!storageKey) return [];
+    if (!storageKey && props.favoriteIds === undefined) return [];
     const seen = new Set<string>();
     const pinned: FileManagerItem[] = [];
     const recents: FileManagerItem[] = [];
@@ -151,10 +155,10 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
   }, [favoriteIds, recentIds, storageKey, treeIndex]);
 
   useEffect(() => {
-    if (!storageKey) return;
+    if (!storageKey || props.favoriteIds !== undefined) return;
     setFavoriteIds(getFavoriteFolderIds(storageKey));
     setRecentIds(getRecentFolderIds(storageKey));
-  }, [storageKey]);
+  }, [props.favoriteIds, setFavoriteIds, storageKey]);
 
   useEffect(() => {
     const nextIds = selectedIds.filter((id) => treeIndex.byId.has(id));
@@ -210,7 +214,10 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
           if (requestId === previewRequest.current) setPreview({ kind: "icon" });
           return;
         }
-        const result = await buildFilePreview(url, extension);
+        const result = await buildFilePreview(url, extension, {
+          pdfWorkerSrc: props.pdfWorkerSrc,
+          fetchInit: props.previewFetchInit,
+        });
         if (requestId === previewRequest.current) setPreview(result);
       } catch {
         if (requestId === previewRequest.current) setPreview({ kind: "icon" });
@@ -218,7 +225,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
         if (requestId === previewRequest.current) setIsPreviewLoading(false);
       }
     },
-    [onGetPreviewUrl, previewEnabled],
+    [onGetPreviewUrl, previewEnabled, props.pdfWorkerSrc, props.previewFetchInit],
   );
 
   const clearSearch = useCallback((): void => {
@@ -243,18 +250,24 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
   const toggleFavorite = useCallback(
     (event: MouseEvent | null, id: string): void => {
       event?.stopPropagation();
-      if (!storageKey) return;
-      setFavoriteIds(toggleFavoriteFolderId(storageKey, id));
+      if (storageKey) {
+        setFavoriteIds(toggleFavoriteFolderId(storageKey, id));
+        return;
+      }
+      setFavoriteIds(favoriteIds.includes(id) ? favoriteIds.filter((entry) => entry !== id) : [id, ...favoriteIds]);
     },
-    [storageKey]
+    [favoriteIds, setFavoriteIds, storageKey]
   );
 
   const pinFolder = useCallback(
     (id: string): void => {
-      if (!storageKey) return;
-      setFavoriteIds(toggleFavoriteFolderId(storageKey, id));
+      if (storageKey) {
+        setFavoriteIds(toggleFavoriteFolderId(storageKey, id));
+        return;
+      }
+      setFavoriteIds(favoriteIds.includes(id) ? favoriteIds.filter((entry) => entry !== id) : [id, ...favoriteIds]);
     },
-    [storageKey]
+    [favoriteIds, setFavoriteIds, storageKey]
   );
 
   const clearHoverTimers = useCallback((): void => {

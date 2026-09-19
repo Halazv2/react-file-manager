@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 
-import type { FileManagerDropItem } from "./droppedItems";
+import type { FileManagerDropItem } from "./core/droppedItems";
 
 export type { FileManagerDropItem };
 
@@ -91,7 +91,12 @@ export interface FileManagerProps {
   sortComparator?: (a: FileManagerNode, b: FileManagerNode) => number;
   /** localStorage key prefix for pins/recents. */
   storageKey?: string;
+  favoriteIds?: string[];
+  defaultFavoriteIds?: string[];
+  onFavoritesChange?: (ids: string[]) => void;
   enablePreview?: boolean;
+  pdfWorkerSrc?: string;
+  previewFetchInit?: RequestInit;
   onMove?: (
     ids: string[],
     targetFolderId: string | null

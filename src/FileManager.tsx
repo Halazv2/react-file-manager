@@ -5,7 +5,7 @@ import { Sidebar } from "./components/Sidebar";
 import { FileManagerActionsContext, FileManagerContext, FileManagerStateContext } from "./context";
 import { cn } from "./styles";
 import type { FileManagerProps } from "./types";
-import { useFileManagerController } from "./useFileManagerController";
+import { useFileManagerController } from "./hooks/useFileManagerController";
 import "./theme.css";
 
 export function FileManager(props: FileManagerProps) {

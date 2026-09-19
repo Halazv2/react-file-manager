@@ -5,7 +5,7 @@ import { defaultNodeIcon } from "../fileIcons";
 import { StarSolidIcon } from "../icons";
 import { useFileManagerContext } from "../context";
 import { cn } from "../styles";
-import { folderHasChildFolders, getExtension } from "../tree";
+import { folderHasChildFolders, getExtension } from "../core/tree";
 import { formatBytes } from "../formatBytes";
 import type { FileManagerItem } from "../types";
 

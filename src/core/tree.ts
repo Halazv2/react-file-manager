@@ -1,5 +1,5 @@
 import { breadcrumbsFromIndex, buildTreeIndex, folderContainsIdInIndex, getIndexedNode } from "./treeIndex";
-import type { FileManagerItem, FileManagerNode, FileManagerSortBy } from "./types";
+import type { FileManagerItem, FileManagerNode, FileManagerSortBy } from "../types";
 
 export function getNodeById(
   nodes: FileManagerNode[],

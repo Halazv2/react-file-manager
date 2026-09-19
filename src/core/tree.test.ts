@@ -8,7 +8,7 @@ import {
   moveNodes,
   searchNodes
 } from "./tree";
-import type { FileManagerNode } from "./types";
+import type { FileManagerNode } from "../types";
 
 const tree: FileManagerNode[] = [
   {

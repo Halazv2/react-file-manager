@@ -3,7 +3,7 @@ import { formatBytes } from "../formatBytes";
 import { DownloadIcon, StarIcon, StarSolidIcon } from "../icons";
 import { useFileManagerContext } from "../context";
 import { cn } from "../styles";
-import { getExtension } from "../tree";
+import { getExtension } from "../core/tree";
 
 export function DetailsPane() {
   const { selectedNode, renderIcon, renderPreview, renderActions, preview, isPreviewLoading, favoriteIds, toggleFavorite, storageKey, onOpenFile, onDownloadFile, canManage, classNames } =

@@ -1,6 +1,6 @@
 import type { ReactNode, SVGAttributes } from "react";
 
-import { getExtension } from "./tree";
+import { getExtension } from "./core/tree";
 import type { FileManagerNode } from "./types";
 
 export interface FileTypeIconProps extends SVGAttributes<SVGSVGElement> {

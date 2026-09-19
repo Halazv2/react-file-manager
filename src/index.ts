@@ -9,14 +9,14 @@ export {
   planExternalDrop,
   readDataTransferItems,
   readFileSystemEntries,
-} from "./droppedItems";
-export { folderDropTargetHandlers } from "./dropTarget";
+} from "./core/droppedItems";
+export { folderDropTargetHandlers } from "./adapters/dropTarget";
 export { defaultNodeIcon, FileTypeIcon, FolderTypeIcon } from "./fileIcons";
 export type { FileTypeIconProps, FolderTypeIconProps } from "./fileIcons";
-export { buildFilePreview, isImageExtension, isPdfExtension, isTextExtension } from "./preview";
-export { getFavoriteFolderIds, getRecentFolderIds, MAX_RECENT_FOLDERS, pushRecentFolderId, toggleFavoriteFolderId } from "./pins";
+export { buildFilePreview, isImageExtension, isPdfExtension, isTextExtension } from "./adapters/preview";
+export { getFavoriteFolderIds, getRecentFolderIds, MAX_RECENT_FOLDERS, pushRecentFolderId, toggleFavoriteFolderId } from "./adapters/pins";
 export { formatBytes } from "./formatBytes";
-export { folderContainsId, folderHasChildFolders, getBreadcrumbs, getExtension, getFolderContents, getNodeById, listFolder, moveNodes, searchNodes } from "./tree";
+export { folderContainsId, folderHasChildFolders, getBreadcrumbs, getExtension, getFolderContents, getNodeById, listFolder, moveNodes, searchNodes } from "./core/tree";
 export type {
   DropTargetId,
   FileManagerAction,

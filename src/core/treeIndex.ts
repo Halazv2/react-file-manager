@@ -1,4 +1,4 @@
-import type { FileManagerNode } from "./types";
+import type { FileManagerNode } from "../types";
 
 export interface TreeIndex {
   byId: Map<string, FileManagerNode>;

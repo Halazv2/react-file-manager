@@ -4,7 +4,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { Breadcrumbs } from "./Breadcrumbs";
 import { FileManagerBulkBar, Item } from "./Item";
-import { isExternalFileDrag } from "../droppedItems";
+import { isExternalFileDrag } from "../core/droppedItems";
 import { CardsIcon, FolderIcon, ListIcon, SearchIcon, UploadIcon } from "../icons";
 import { useFileManagerContext } from "../context";
 import { cn } from "../styles";

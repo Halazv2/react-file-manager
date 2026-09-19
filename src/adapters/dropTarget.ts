@@ -1,7 +1,7 @@
 import type { DragEvent, Dispatch, SetStateAction } from "react";
 
-import { isExternalFileDrag } from "./droppedItems";
-import type { DropTargetId } from "./types";
+import { isExternalFileDrag } from "../core/droppedItems";
+import type { DropTargetId } from "../types";
 
 function isCrossingBoundary(event: DragEvent<HTMLElement>): boolean {
   const related = event.relatedTarget as Node | null;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { breadcrumbsFromIndex, buildTreeIndex, folderContainsIdInIndex, getIndexedNode } from "./treeIndex";
-import type { FileManagerNode } from "./types";
+import type { FileManagerNode } from "../types";
 
 const tree: FileManagerNode[] = [
   {

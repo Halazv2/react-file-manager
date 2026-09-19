@@ -4,7 +4,7 @@ import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { FileManager } from "./FileManager";
-import { FILE_MANAGER_DRAG_MIME } from "./droppedItems";
+import { FILE_MANAGER_DRAG_MIME } from "./core/droppedItems";
 import type { FileManagerNode } from "./types";
 
 const nodes: FileManagerNode[] = [
