@@ -877,5 +877,6 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     startRename,
     commitRename,
     cancelRename,
+    components: props.components,
   };
 }

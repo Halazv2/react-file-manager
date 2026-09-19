@@ -280,4 +280,15 @@ describe("FileManager characterization", () => {
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("menu")).toBeNull();
   });
+
+  it("substitutes layout slots from the components prop", () => {
+    renderManager({
+      components: {
+        DetailsPane: () => <aside aria-label="Custom details">Inspector</aside>,
+      },
+    });
+
+    expect(screen.getByRole("complementary", { name: "Custom details" })).toBeTruthy();
+    expect(screen.queryByText("Select a file or folder to view details")).toBeNull();
+  });
 });

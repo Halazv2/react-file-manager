@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, ComponentType, ReactNode } from "react";
 
 import type { FileManagerDropItem } from "./core/droppedItems";
 import type { FileManagerLabels } from "./labels";
@@ -64,6 +64,13 @@ export interface FileManagerClassNames {
   viewToggle?: string;
 }
 
+export interface FileManagerComponents {
+  Row?: ComponentType<{ item: FileManagerItem; index: number }>;
+  Sidebar?: ComponentType;
+  Browser?: ComponentType;
+  DetailsPane?: ComponentType;
+}
+
 export interface FileManagerProps {
   nodes: FileManagerNode[];
   folderId?: string | null;
@@ -127,4 +134,5 @@ export interface FileManagerProps {
   renderActions?: (node: FileManagerNode) => ReactNode;
   onError?: (error: unknown, context: { operation: string }) => void;
   labels?: Partial<FileManagerLabels>;
+  components?: FileManagerComponents;
 }

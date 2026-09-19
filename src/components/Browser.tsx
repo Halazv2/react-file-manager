@@ -102,7 +102,8 @@ function ItemGrid({
   folderId: string | null;
   isBusy: boolean;
 }) {
-  const { view, canManage, onCreateFolder, fileInputRef, labels } = useFileManagerContext();
+  const { view, canManage, onCreateFolder, fileInputRef, labels, components } = useFileManagerContext();
+  const Row = components?.Row ?? Item;
   const parentRef = useRef<HTMLDivElement>(null);
   const [viewportWidth, setViewportWidth] = useState(0);
   const cardColumns = Math.max(1, Math.floor(Math.max(viewportWidth - 24, CARD_MIN_WIDTH) / CARD_MIN_WIDTH));
@@ -169,7 +170,7 @@ function ItemGrid({
                   width: "100%",
                   transform: `translateY(${virtualRow.start}px)`,
                 }}>
-                <Item item={item} index={virtualRow.index} />
+                <Row item={item} index={virtualRow.index} />
               </div>
             );
           })}
@@ -194,7 +195,7 @@ function ItemGrid({
                   gridTemplateColumns: `repeat(${cardColumns}, minmax(0, 1fr))`,
                 }}>
                 {rowItems.map((item, offset) => (
-                  <Item key={item.id} item={item} index={start + offset} />
+                  <Row key={item.id} item={item} index={start + offset} />
                 ))}
               </div>
             );
@@ -203,7 +204,7 @@ function ItemGrid({
       ) : (
         <div className={view === "cards" ? "rfm-item-grid" : "rfm-item-list"} role="listbox" aria-label={labels.folderContents}>
           {items.map((item, index) => (
-            <Item key={item.id} item={item} index={index} />
+            <Row key={item.id} item={item} index={index} />
           ))}
         </div>
       )}

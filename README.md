@@ -180,6 +180,7 @@ Every `FileManagerProps` field:
 | `onCreateFile` | `(folderId) => void` | Optional “new document” entry. |
 | `onRename` | `(id, name) => void` | Inline rename (F2 or menu). Sets `data-editing` on the row. |
 | `labels` | `Partial<FileManagerLabels>` | Override UI copy (search, empty states, menus, live announcements). |
+| `components` | `{ Row?, Sidebar?, Browser?, DetailsPane? }` | Replace layout pieces. Default remains batteries-included. |
 | `onDownloadFile` / `onDownloadFolder` | `(id) => void` | Download hooks. |
 | `onDelete` | `(ids) => void` | Delete / Backspace. |
 | `getItemActions` | `(node) => FileManagerAction[]` | Context / more menu items. |
@@ -230,6 +231,35 @@ type FileManagerAction = {
   icon?: ReactNode;
 };
 ```
+
+## Compound API
+
+`<FileManager />` stays batteries-included. For a custom shell, call `useFileManager(props)` (the same controller) and/or pass `components`:
+
+```tsx
+import {
+  FileManager,
+  FileManagerBrowser,
+  FileManagerDetailsPane,
+  FileManagerRow,
+  FileManagerSidebar,
+  useFileManager,
+} from "@halazv2/react-file-manager";
+
+<FileManager
+  nodes={nodes}
+  components={{
+    Row: FileManagerRow,
+    Sidebar: FileManagerSidebar,
+    Browser: FileManagerBrowser,
+    DetailsPane: FileManagerDetailsPane,
+  }}
+/>
+```
+
+`useFileManager` must run under your own providers if you render the slot components yourself; the default `<FileManager />` already provides context.
+
+Tree helpers (`listFolder`, `moveNodes`, `searchNodes`, …) stay exported for host state.
 
 ## Next.js / SSR
 

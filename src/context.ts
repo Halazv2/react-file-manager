@@ -12,6 +12,7 @@ import type {
   DropTargetId,
   FileManagerAction,
   FileManagerClassNames,
+  FileManagerComponents,
   FileManagerItem,
   FileManagerNode,
   FileManagerView,
@@ -90,6 +91,7 @@ export interface FileManagerContextValue {
   startRename: (id: string) => void;
   commitRename: (id: string, name: string) => void;
   cancelRename: () => void;
+  components?: FileManagerComponents;
 }
 
 export const FileManagerContext = createContext<FileManagerContextValue | null>(

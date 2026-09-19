@@ -11,6 +11,9 @@ import "./theme.css";
 export function FileManager(props: FileManagerProps) {
   const value = useFileManagerController(props);
   const { classNames } = value;
+  const SidebarSlot = props.components?.Sidebar ?? Sidebar;
+  const BrowserSlot = props.components?.Browser ?? Browser;
+  const DetailsSlot = props.components?.DetailsPane ?? DetailsPane;
 
   return (
     <FileManagerActionsContext.Provider value={value}>
@@ -29,9 +32,9 @@ export function FileManager(props: FileManagerProps) {
               {value.liveMessage}
             </div>
             <div className={cn("rfm-layout", classNames?.layout)} data-details={value.showDetails ? undefined : "false"}>
-              <Sidebar />
-              <Browser />
-              {value.showDetails && <DetailsPane />}
+              <SidebarSlot />
+              <BrowserSlot />
+              {value.showDetails && <DetailsSlot />}
             </div>
             <FileManagerContextMenu />
           </div>

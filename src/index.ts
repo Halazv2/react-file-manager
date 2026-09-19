@@ -1,6 +1,11 @@
 "use client";
 
 export { FileManager } from "./FileManager";
+export { useFileManagerController as useFileManager } from "./hooks/useFileManagerController";
+export { Item as FileManagerRow } from "./components/Item";
+export { Sidebar as FileManagerSidebar } from "./components/Sidebar";
+export { Browser as FileManagerBrowser } from "./components/Browser";
+export { DetailsPane as FileManagerDetailsPane } from "./components/DetailsPane";
 export {
   FILE_MANAGER_DRAG_MIME,
   filesFromDroppedItems,
@@ -22,6 +27,7 @@ export type {
   DropTargetId,
   FileManagerAction,
   FileManagerClassNames,
+  FileManagerComponents,
   FileManagerDropItem,
   FileManagerItem,
   FileManagerKind,
