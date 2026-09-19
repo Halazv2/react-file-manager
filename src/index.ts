@@ -22,7 +22,7 @@ export { buildFilePreview, isImageExtension, isPdfExtension, isTextExtension } f
 export { getFavoriteFolderIds, getRecentFolderIds, MAX_RECENT_FOLDERS, pushRecentFolderId, toggleFavoriteFolderId } from "./adapters/pins";
 export { DEFAULT_LABELS, resolveLabels } from "./labels";
 export type { FileManagerLabels } from "./labels";
-export { folderContainsId, folderHasChildFolders, getBreadcrumbs, getExtension, getFolderContents, getNodeById, listFolder, moveNodes, searchNodes } from "./core/tree";
+export { folderContainsId, folderHasChildFolders, folderHasChildren, getBreadcrumbs, getExtension, getFolderContents, getNodeById, listFolder, moveNodes, searchNodes } from "./core/tree";
 export type {
   DropTargetId,
   FileManagerAction,

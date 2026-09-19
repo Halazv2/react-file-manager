@@ -16,6 +16,10 @@ export function folderHasChildFolders(folder: FileManagerNode): boolean {
   return (folder.children ?? []).some((child) => child.kind === "folder");
 }
 
+export function folderHasChildren(folder: FileManagerNode): boolean {
+  return (folder.children?.length ?? 0) > 0;
+}
+
 export function getFolderContents(
   nodes: FileManagerNode[],
   folderId: string | null

@@ -48,7 +48,7 @@ export function Browser() {
               onChange={(event) => setSearchQuery(event.target.value)}
             />
           </label>
-          <div>
+          <div className="rfm-view-toggles">
             <ViewToggle label={labels.listView} pressed={view === "list"} onClick={() => setView("list")}>
               <ListIcon size={16} />
             </ViewToggle>

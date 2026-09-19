@@ -59,6 +59,8 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     renderPreview,
     renderActions,
     onError,
+    showFilesInTree = true,
+    treeRevealOnFileSelect = true,
   } = props;
 
   const labels = useMemo(() => resolveLabels(props.labels), [props.labels]);
@@ -707,6 +709,71 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     [onOpenFile, openFolder],
   );
 
+  const selectTreeNode = useCallback(
+    (item: FileManagerItem): void => {
+      if (suppressClickRef.current) {
+        suppressClickRef.current = false;
+        return;
+      }
+
+      if (item.kind === "folder") {
+        openFolder(item.id);
+        return;
+      }
+
+      if (treeRevealOnFileSelect) {
+        const parentId = treeIndex.parentOf.has(item.id) ? (treeIndex.parentOf.get(item.id) ?? null) : null;
+        setExpandedIds((current) => {
+          const next = new Set(current);
+          let walk: string | null | undefined = parentId;
+          while (walk) {
+            next.add(walk);
+            walk = treeIndex.parentOf.get(walk);
+            if (walk === undefined) break;
+          }
+          return next;
+        });
+        setFolderId(parentId);
+        setSpringFolderId(undefined);
+        clearSearch();
+        if (parentId && storageKey) {
+          setRecentIds(pushRecentFolderId(storageKey, parentId));
+        }
+        onOpenFolder?.(parentId);
+
+        const siblings = listFolder(nodes, parentId, {
+          sortBy: props.sortBy,
+          sortDirection: props.sortDirection,
+          sortComparator: props.sortComparator,
+        });
+        const index = siblings.findIndex((entry) => entry.id === item.id);
+        if (index >= 0) {
+          setFocusedIndex(index);
+          selectionAnchorIndex.current = index;
+        }
+      }
+
+      setSelectedIds([item.id]);
+      setSelectedNode(item);
+      void loadPreview(item);
+    },
+    [
+      clearSearch,
+      loadPreview,
+      nodes,
+      onOpenFolder,
+      openFolder,
+      props.sortBy,
+      props.sortComparator,
+      props.sortDirection,
+      setFolderId,
+      setSelectedIds,
+      storageKey,
+      treeIndex,
+      treeRevealOnFileSelect,
+    ],
+  );
+
   const openContextMenu = useCallback(
     (item: FileManagerItem, event: MouseEvent): void => {
       event.preventDefault();
@@ -940,6 +1007,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     toggleExpanded,
     collapseAll,
     selectItem,
+    selectTreeNode,
     activateItem,
     onDragStart,
     onPointerDragDown,
@@ -983,5 +1051,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     commitRename,
     cancelRename,
     components: props.components,
+    showFilesInTree,
+    treeRevealOnFileSelect,
   };
 }

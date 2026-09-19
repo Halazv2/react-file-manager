@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 
 import { BulkActionBar, ContextMenuLayer, MoreMenuButton } from "./ActionMenu";
 import { ItemErrorBoundary } from "./ItemErrorBoundary";
@@ -6,9 +6,9 @@ import { defaultNodeIcon } from "../fileIcons";
 import { StarSolidIcon } from "../icons";
 import { useFileManagerContext } from "../context";
 import { cn } from "../styles";
-import { folderHasChildFolders, getExtension } from "../core/tree";
+import { compareFolderEntries, folderHasChildren, getExtension } from "../core/tree";
 import { formatBytes } from "../formatBytes";
-import type { FileManagerItem } from "../types";
+import type { FileManagerItem, FileManagerNode } from "../types";
 
 export const Item = memo(function Item({ item, index }: { item: FileManagerItem; index: number }) {
   const {
@@ -129,37 +129,73 @@ export const Item = memo(function Item({ item, index }: { item: FileManagerItem;
   );
 });
 
+function sortTreeChildren(children: FileManagerNode[]): FileManagerNode[] {
+  return [...children].sort((a, b) => compareFolderEntries(a, b, "name", "asc"));
+}
+
 export function FolderTree({ folders, depth = 0 }: { folders: FileManagerItem[]; depth?: number }) {
-  const { viewFolderId, dropTargetId, expandedIds, favoriteIds, openFolder, toggleExpanded, folderDropHandlers, renderIcon, renderActions, resolveItemActions, openContextMenu, classNames, labels } =
-    useFileManagerContext();
+  const {
+    viewFolderId,
+    dropTargetId,
+    expandedIds,
+    favoriteIds,
+    selectedIds,
+    toggleExpanded,
+    folderDropHandlers,
+    renderIcon,
+    renderActions,
+    resolveItemActions,
+    openContextMenu,
+    classNames,
+    labels,
+    showFilesInTree,
+    selectTreeNode,
+    activateItem,
+    onDragStart,
+    onPointerDragDown,
+    html5Draggable,
+    canManage,
+  } = useFileManagerContext();
+
+  const entries = useMemo(() => {
+    const list = showFilesInTree ? folders : folders.filter((node) => node.kind === "folder");
+    return sortTreeChildren(list);
+  }, [folders, showFilesInTree]);
 
   return (
     <>
-      {folders
-        .filter((folder) => folder.kind === "folder")
-        .map((folder) => {
-          const hasChildren = folderHasChildFolders(folder);
-          const isExpanded = expandedIds.has(folder.id);
-          const isActive = viewFolderId === folder.id;
-          const isDrop = dropTargetId === folder.id;
-          const isFavorite = favoriteIds.includes(folder.id);
-          const actions = resolveItemActions(folder);
+      {entries.map((node) => {
+        const isFolder = node.kind === "folder";
+        const hasChildren = isFolder && folderHasChildren(node);
+        const isExpanded = expandedIds.has(node.id);
+        const isActive = isFolder ? viewFolderId === node.id : selectedIds.includes(node.id);
+        const isDrop = isFolder && dropTargetId === node.id;
+        const isFavorite = isFolder && favoriteIds.includes(node.id);
+        const actions = resolveItemActions(node);
+        const childEntries = isFolder && hasChildren && isExpanded ? (node.children ?? []) : [];
 
-          return (
-            <div key={folder.id}>
-              <div
-                role="treeitem"
-                aria-selected={isActive}
-                aria-label={folder.name}
-                tabIndex={0}
-                data-kind="folder"
-                data-drop-id={folder.id}
-                data-drop-target={isDrop || undefined}
-                className={cn("rfm-tree-row", classNames?.treeRow)}
-                style={{ paddingInlineStart: 6 + depth * 12 }}
-                onClick={() => openFolder(folder.id)}
-                onContextMenu={(event) => openContextMenu(folder, event)}
-                {...folderDropHandlers(folder.id)}>
+        return (
+          <div key={node.id}>
+            <div
+              role="treeitem"
+              aria-selected={isActive}
+              aria-label={node.name}
+              tabIndex={0}
+              data-kind={node.kind}
+              data-drop-id={isFolder ? node.id : undefined}
+              data-drop-target={isDrop || undefined}
+              draggable={canManage && html5Draggable}
+              className={cn("rfm-tree-row", classNames?.treeRow)}
+              style={{ paddingInlineStart: 6 + depth * 12 }}
+              onDragStart={(event) => onDragStart(node, event)}
+              onPointerDown={(event) => onPointerDragDown(node, event)}
+              onClick={() => selectTreeNode(node)}
+              onDoubleClick={() => {
+                if (!isFolder) activateItem(node);
+              }}
+              onContextMenu={(event) => openContextMenu(node, event)}
+              {...(isFolder ? folderDropHandlers(node.id) : {})}>
+              {isFolder ? (
                 <button
                   type="button"
                   className="rfm-tree-chevron"
@@ -167,28 +203,32 @@ export function FolderTree({ folders, depth = 0 }: { folders: FileManagerItem[];
                   aria-expanded={hasChildren ? isExpanded : undefined}
                   disabled={!hasChildren}
                   onClick={(event) => {
+                    event.stopPropagation();
                     if (!hasChildren) return;
-                    toggleExpanded(event, folder.id);
+                    toggleExpanded(event, node.id);
                   }}>
                   <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
                     <path d="m9 6 6 6-6 6" />
                   </svg>
                 </button>
-                {renderIcon?.(folder, 16) ?? defaultNodeIcon(folder, 16)}
-                <span className="rfm-item-name" title={folder.name}>
-                  {folder.name}
-                </span>
-                {isFavorite && <StarSolidIcon className="rfm-star" size={14} />}
-                {renderActions ? <span className="rfm-more">{renderActions(folder)}</span> : <MoreMenuButton actions={actions} label={labels.manageItem(folder.name)} />}
-              </div>
-              {hasChildren && isExpanded && (
-                <div>
-                  <FolderTree folders={folder.children ?? []} depth={depth + 1} />
-                </div>
+              ) : (
+                <span className="rfm-tree-chevron" aria-hidden style={{ visibility: "hidden" }} />
               )}
+              {renderIcon?.(node, 16) ?? defaultNodeIcon(node, 16)}
+              <span className="rfm-item-name" title={node.name}>
+                {node.name}
+              </span>
+              {isFavorite && <StarSolidIcon className="rfm-star" size={14} />}
+              {renderActions ? <span className="rfm-more">{renderActions(node)}</span> : <MoreMenuButton actions={actions} label={labels.manageItem(node.name)} />}
             </div>
-          );
-        })}
+            {hasChildren && isExpanded && (
+              <div>
+                <FolderTree folders={childEntries} depth={depth + 1} />
+              </div>
+            )}
+          </div>
+        );
+      })}
     </>
   );
 }

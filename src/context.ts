@@ -49,6 +49,7 @@ export interface FileManagerContextValue {
   toggleExpanded: (event: MouseEvent, id: string) => void;
   collapseAll: () => void;
   selectItem: (node: FileManagerItem, event?: MouseEvent) => void;
+  selectTreeNode: (node: FileManagerItem) => void;
   activateItem: (node: FileManagerItem) => void;
   onDragStart: (node: FileManagerItem, event: DragEvent) => void;
   onPointerDragDown: (node: FileManagerItem, event: PointerEvent<HTMLElement>) => void;
@@ -95,6 +96,8 @@ export interface FileManagerContextValue {
   commitRename: (id: string, name: string) => void;
   cancelRename: () => void;
   components?: FileManagerComponents;
+  showFilesInTree: boolean;
+  treeRevealOnFileSelect: boolean;
 }
 
 export const FileManagerContext = createContext<FileManagerContextValue | null>(

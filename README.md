@@ -28,17 +28,15 @@ Anything else (utility classes, extra BEM modifiers) is internal.
 2. **`aria-*` / `data-*`** — state (`aria-selected`, `aria-pressed`, `aria-expanded`, `aria-busy`, `data-theme`, `data-focused`, `data-drop-target`, `data-view`, `data-kind`)  
 3. **`classNames` slots + root `className` / `style`** — escape hatch  
 
-Import the published stylesheet **before** Tailwind v4, or declare `@layer rfm, theme, base, components, utilities;` first. A `@layer rfm` sheet imported *after* Tailwind ranks above `@layer utilities` and would beat `className="p-8"`.
+Import the published stylesheet (also pulled in by `<FileManager />`):
 
 ```ts
 import "@halazv2/react-file-manager/styles.css";
 ```
 
-```css
-@layer rfm, theme, base, components, utilities;
-@import "@halazv2/react-file-manager/styles.css";
-@import "tailwindcss";
+Styles are **unlayered**, so they keep working beside a host Tailwind setup. Theme with CSS variables; restyle via `classNames` or selectors under `.rfm-root`.
 
+```css
 .rfm-root {
   --rfm-accent: #0f766e;
   --rfm-selected: color-mix(in srgb, var(--rfm-accent) 12%, transparent);
@@ -192,6 +190,8 @@ Every `FileManagerProps` field:
 | `renderIcon` | `(node, size?) => ReactNode` | Override built-in icons. |
 | `renderPreview` | `(node) => ReactNode` | Replace the details pane. |
 | `renderActions` | `(node) => ReactNode` | Extra per-item actions. |
+| `showFilesInTree` | `boolean` | List files under folders in the sidebar tree. Default `true`. |
+| `treeRevealOnFileSelect` | `boolean` | Selecting a file in the tree opens its parent folder in the browser. Default `true`. Set `false` for select-only. |
 
 `FileManagerNode`:
 

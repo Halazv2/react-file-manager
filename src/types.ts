@@ -135,4 +135,8 @@ export interface FileManagerProps {
   onError?: (error: unknown, context: { operation: string }) => void;
   labels?: Partial<FileManagerLabels>;
   components?: FileManagerComponents;
+  /** When true (default), the sidebar tree lists files under folders. */
+  showFilesInTree?: boolean;
+  /** When true (default), selecting a file in the tree opens its parent folder in the browser. */
+  treeRevealOnFileSelect?: boolean;
 }

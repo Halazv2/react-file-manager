@@ -271,7 +271,7 @@ describe("FileManager characterization", () => {
     const user = userEvent.setup();
     renderManager({ onRename: vi.fn(), onDelete: vi.fn(), canManage: true });
 
-    await user.click(screen.getByRole("button", { name: "Manage README.md" }));
+    await user.click(within(folderContents()).getByRole("button", { name: "Manage README.md" }));
     const menu = screen.getByRole("menu");
     const items = within(menu).getAllByRole("menuitem");
     expect(document.activeElement).toBe(items[0]);
@@ -310,5 +310,38 @@ describe("FileManager characterization", () => {
     });
 
     document.elementFromPoint = original;
+  });
+
+  it("shows files in the sidebar tree when a folder is expanded", async () => {
+    const user = userEvent.setup();
+    renderManager();
+
+    const docs = screen.getByRole("treeitem", { name: "Documents" });
+    await user.click(within(docs).getByRole("button", { name: "Expand folder" }));
+
+    expect(screen.getByRole("treeitem", { name: "notes.txt" })).toBeTruthy();
+    expect(screen.getByRole("treeitem", { name: "Nested" })).toBeTruthy();
+  });
+
+  it("reveals a file parent folder when selecting it in the tree", async () => {
+    const user = userEvent.setup();
+    const onFolderChange = vi.fn();
+    const onSelectionChange = vi.fn();
+    renderManager({ onFolderChange, onSelectionChange });
+
+    const docs = screen.getByRole("treeitem", { name: "Documents" });
+    await user.click(within(docs).getByRole("button", { name: "Expand folder" }));
+    await user.click(screen.getByRole("treeitem", { name: "notes.txt" }));
+
+    expect(onFolderChange).toHaveBeenCalledWith("docs");
+    expect(onSelectionChange).toHaveBeenCalledWith(["notes"]);
+    expect(within(folderContents()).getByRole("option", { name: "notes.txt" }).getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("can disable tree file listing", () => {
+    renderManager({ showFilesInTree: false, defaultFolderId: "docs" });
+    // Current folder path auto-expands in the tree.
+    expect(screen.queryByRole("treeitem", { name: "notes.txt" })).toBeNull();
+    expect(screen.getByRole("treeitem", { name: "Nested" })).toBeTruthy();
   });
 });
