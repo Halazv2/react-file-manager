@@ -3,13 +3,17 @@ import type {
   DragEvent,
   KeyboardEvent,
   MouseEvent,
+  PointerEvent,
   ReactNode,
   RefObject
 } from "react";
 
+import type { FileManagerLabels } from "./labels";
 import type {
   DropTargetId,
   FileManagerAction,
+  FileManagerClassNames,
+  FileManagerComponents,
   FileManagerItem,
   FileManagerNode,
   FileManagerView,
@@ -45,8 +49,11 @@ export interface FileManagerContextValue {
   toggleExpanded: (event: MouseEvent, id: string) => void;
   collapseAll: () => void;
   selectItem: (node: FileManagerItem, event?: MouseEvent) => void;
+  selectTreeNode: (node: FileManagerItem) => void;
   activateItem: (node: FileManagerItem) => void;
   onDragStart: (node: FileManagerItem, event: DragEvent) => void;
+  onPointerDragDown: (node: FileManagerItem, event: PointerEvent<HTMLElement>) => void;
+  html5Draggable: boolean;
   onInternalDragEnd: () => void;
   onDropOnFolder: (
     event: DragEvent,
@@ -80,16 +87,38 @@ export interface FileManagerContextValue {
   contextMenu: { x: number; y: number; node: FileManagerItem } | null;
   openContextMenu: (node: FileManagerItem, event: MouseEvent) => void;
   closeContextMenu: () => void;
+  classNames?: FileManagerClassNames;
+  rootRef: RefObject<HTMLDivElement | null>;
+  labels: FileManagerLabels;
+  liveMessage: string;
+  editingId: string | null;
+  startRename: (id: string) => void;
+  commitRename: (id: string, name: string) => void;
+  cancelRename: () => void;
+  components?: FileManagerComponents;
+  showFilesInTree: boolean;
+  treeRevealOnFileSelect: boolean;
 }
 
 export const FileManagerContext = createContext<FileManagerContextValue | null>(
   null
 );
 
+export const FileManagerStateContext = createContext<FileManagerContextValue | null>(null);
+export const FileManagerActionsContext = createContext<FileManagerContextValue | null>(null);
+
 export function useFileManagerContext(): FileManagerContextValue {
-  const value = useContext(FileManagerContext);
+  const combined = useContext(FileManagerContext);
+  const state = useContext(FileManagerStateContext);
+  const value = combined ?? state;
   if (!value) {
     throw new Error("FileManager components must be used inside <FileManager>");
   }
   return value;
 }
+
+export function useFileManagerActions(): FileManagerContextValue {
+  const actions = useContext(FileManagerActionsContext);
+  return actions ?? useFileManagerContext();
+}
+

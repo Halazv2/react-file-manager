@@ -1,12 +1,15 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ComponentType, ReactNode } from "react";
 
-import type { FileManagerDropItem } from "./droppedItems";
+import type { FileManagerDropItem } from "./core/droppedItems";
+import type { FileManagerLabels } from "./labels";
 
 export type { FileManagerDropItem };
 
 export type FileManagerKind = "folder" | "file";
 
 export type FileManagerView = "list" | "cards";
+
+export type FileManagerTheme = "light" | "dark";
 
 export interface FileManagerNode {
   id: string;
@@ -17,6 +20,8 @@ export interface FileManagerNode {
   size?: number;
   meta?: Record<string, unknown>;
 }
+
+export type FileManagerSortBy = "name" | "size" | "kind";
 
 export type FileManagerItem = FileManagerNode & {
   path?: string;
@@ -42,6 +47,30 @@ export interface FilePreviewResult {
   pages?: number;
 }
 
+export interface FileManagerClassNames {
+  root?: string;
+  layout?: string;
+  sidebar?: string;
+  browser?: string;
+  details?: string;
+  item?: string;
+  treeRow?: string;
+  toolbar?: string;
+  search?: string;
+  menu?: string;
+  more?: string;
+  bulkBar?: string;
+  iconButton?: string;
+  viewToggle?: string;
+}
+
+export interface FileManagerComponents {
+  Row?: ComponentType<{ item: FileManagerItem; index: number }>;
+  Sidebar?: ComponentType;
+  Browser?: ComponentType;
+  DetailsPane?: ComponentType;
+}
+
 export interface FileManagerProps {
   nodes: FileManagerNode[];
   folderId?: string | null;
@@ -59,12 +88,23 @@ export interface FileManagerProps {
   canManage?: boolean;
   rootLabel?: string;
   className?: string;
+  style?: CSSProperties;
+  theme?: FileManagerTheme;
+  classNames?: FileManagerClassNames;
   showDetails?: boolean;
   springLoadDelay?: number;
   isBusy?: boolean;
+  sortBy?: FileManagerSortBy;
+  sortDirection?: "asc" | "desc";
+  sortComparator?: (a: FileManagerNode, b: FileManagerNode) => number;
   /** localStorage key prefix for pins/recents. */
   storageKey?: string;
+  favoriteIds?: string[];
+  defaultFavoriteIds?: string[];
+  onFavoritesChange?: (ids: string[]) => void;
   enablePreview?: boolean;
+  pdfWorkerSrc?: string;
+  previewFetchInit?: RequestInit;
   onMove?: (
     ids: string[],
     targetFolderId: string | null
@@ -92,4 +132,11 @@ export interface FileManagerProps {
   renderIcon?: (node: FileManagerNode, size?: number) => ReactNode;
   renderPreview?: (node: FileManagerItem | null) => ReactNode;
   renderActions?: (node: FileManagerNode) => ReactNode;
+  onError?: (error: unknown, context: { operation: string }) => void;
+  labels?: Partial<FileManagerLabels>;
+  components?: FileManagerComponents;
+  /** When true (default), the sidebar tree lists files under folders. */
+  showFilesInTree?: boolean;
+  /** When true (default), selecting a file in the tree opens its parent folder in the browser. */
+  treeRevealOnFileSelect?: boolean;
 }

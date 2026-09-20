@@ -1,4 +1,4 @@
-import type { FilePreviewResult } from "./types";
+import type { FilePreviewResult } from "../types";
 
 const IMAGE_EXTENSIONS = new Set([
   "png",
@@ -34,27 +34,32 @@ export function isTextExtension(extension?: string): boolean {
   return TEXT_EXTENSIONS.has((extension || "").toLowerCase());
 }
 
-async function loadTextPreview(url: string): Promise<string> {
-  const response = await fetch(url);
+export type PreviewBuildOptions = {
+  pdfWorkerSrc?: string;
+  fetchInit?: RequestInit;
+};
+
+async function loadTextPreview(url: string, fetchInit?: RequestInit): Promise<string> {
+  const response = await fetch(url, fetchInit);
   if (!response.ok) throw new Error("Failed to load text preview");
   const text = await response.text();
   return text.slice(0, 4000);
 }
 
 async function renderPdfFirstPage(
-  url: string
+  url: string,
+  pdfWorkerSrc?: string,
+  fetchInit?: RequestInit
 ): Promise<{ thumbnail: string; pages: number }> {
   // Optional peer: pdfjs-dist. If missing, fall back to icon preview.
   // @ts-expect-error optional peer may be absent at compile time
   const pdfjs = await import("pdfjs-dist");
-  const version = (pdfjs as { version?: string }).version || "4.5.136";
-  if ("GlobalWorkerOptions" in pdfjs) {
+  if (pdfWorkerSrc && "GlobalWorkerOptions" in pdfjs) {
     (
       pdfjs as {
         GlobalWorkerOptions: { workerSrc: string };
       }
-    ).GlobalWorkerOptions.workerSrc =
-      `//unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
+    ).GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
   }
 
   const loadingTask = (
@@ -72,7 +77,7 @@ async function renderPdfFirstPage(
     }
   ).getDocument({
     url,
-    withCredentials: false,
+    withCredentials: Boolean(fetchInit?.credentials && fetchInit.credentials !== "omit"),
     disableRange: true,
     disableStream: true
   });
@@ -94,7 +99,8 @@ async function renderPdfFirstPage(
 
 export async function buildFilePreview(
   url: string,
-  extension?: string
+  extension?: string,
+  options?: PreviewBuildOptions
 ): Promise<FilePreviewResult> {
   const ext = (extension || "").toLowerCase();
 
@@ -104,7 +110,7 @@ export async function buildFilePreview(
 
   if (isPdfExtension(ext)) {
     try {
-      const { thumbnail, pages } = await renderPdfFirstPage(url);
+      const { thumbnail, pages } = await renderPdfFirstPage(url, options?.pdfWorkerSrc, options?.fetchInit);
       return { kind: "pdf", url: thumbnail, pages };
     } catch {
       return { kind: "icon" };
@@ -113,7 +119,7 @@ export async function buildFilePreview(
 
   if (isTextExtension(ext)) {
     try {
-      const text = await loadTextPreview(url);
+      const text = await loadTextPreview(url, options?.fetchInit);
       return { kind: "text", text };
     } catch {
       return { kind: "icon" };

@@ -12,17 +12,21 @@ export default defineConfig({
     dts({
       tsconfigPath: resolve(root, "tsconfig.app.json"),
       include: ["src"],
-      exclude: ["src/**/*.test.ts", "demo"],
+      exclude: ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test", "demo"],
       rollupTypes: true
     })
   ],
   build: {
     copyPublicDir: false,
     lib: {
-      entry: resolve(root, "src/index.ts"),
+      entry: {
+        index: resolve(root, "src/index.ts"),
+        preview: resolve(root, "src/preview-entry.ts")
+      },
       name: "ReactFileManager",
       formats: ["es", "cjs"],
-      fileName: (format) => (format === "es" ? "index.js" : "index.cjs")
+      fileName: (format, entryName) =>
+        `${entryName}.${format === "es" ? "js" : "cjs"}`
     },
     rollupOptions: {
       external: [

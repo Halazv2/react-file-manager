@@ -1,26 +1,23 @@
-import type { FileManagerItem, FileManagerNode } from "./types";
+import { breadcrumbsFromIndex, buildTreeIndex, folderContainsIdInIndex, getIndexedNode } from "./treeIndex";
+import type { FileManagerItem, FileManagerNode, FileManagerSortBy } from "../types";
 
 export function getNodeById(
   nodes: FileManagerNode[],
   id: string
 ): FileManagerNode | null {
-  for (const node of nodes) {
-    if (node.id === id) return node;
-    if (node.children?.length) {
-      const nested = getNodeById(node.children, id);
-      if (nested) return nested;
-    }
-  }
-  return null;
+  return getIndexedNode(buildTreeIndex(nodes), id);
 }
 
 export function folderContainsId(folder: FileManagerNode, id: string): boolean {
-  if (folder.id === id) return true;
-  return (folder.children ?? []).some((child) => folderContainsId(child, id));
+  return folderContainsIdInIndex(buildTreeIndex([folder]), folder.id, id);
 }
 
 export function folderHasChildFolders(folder: FileManagerNode): boolean {
   return (folder.children ?? []).some((child) => child.kind === "folder");
+}
+
+export function folderHasChildren(folder: FileManagerNode): boolean {
+  return (folder.children?.length ?? 0) > 0;
 }
 
 export function getFolderContents(
@@ -31,40 +28,47 @@ export function getFolderContents(
   return getNodeById(nodes, folderId)?.children ?? [];
 }
 
+export function compareFolderEntries(
+  a: FileManagerNode,
+  b: FileManagerNode,
+  sortBy: FileManagerSortBy = "name",
+  sortDirection: "asc" | "desc" = "asc"
+): number {
+  const direction = sortDirection === "desc" ? -1 : 1;
+  if (sortBy === "kind") {
+    if (a.kind !== b.kind) return a.kind === "folder" ? -1 * direction : 1 * direction;
+    return a.name.localeCompare(b.name) * direction;
+  }
+  if (a.kind !== b.kind) return a.kind === "folder" ? -1 : 1;
+  if (sortBy === "size") {
+    return ((a.size ?? 0) - (b.size ?? 0)) * direction;
+  }
+  return a.name.localeCompare(b.name) * direction;
+}
+
 export function listFolder(
   nodes: FileManagerNode[],
-  folderId: string | null
+  folderId: string | null,
+  options?: {
+    sortBy?: FileManagerSortBy;
+    sortDirection?: "asc" | "desc";
+    sortComparator?: (a: FileManagerNode, b: FileManagerNode) => number;
+  }
 ): FileManagerNode[] {
-  return [...getFolderContents(nodes, folderId)].sort((a, b) => {
-    if (a.kind !== b.kind) return a.kind === "folder" ? -1 : 1;
-    return a.name.localeCompare(b.name);
-  });
+  const entries = [...getFolderContents(nodes, folderId)];
+  if (options?.sortComparator) {
+    return entries.sort(options.sortComparator);
+  }
+  return entries.sort((a, b) =>
+    compareFolderEntries(a, b, options?.sortBy, options?.sortDirection)
+  );
 }
 
 export function getBreadcrumbs(
   nodes: FileManagerNode[],
   folderId: string | null
 ): FileManagerNode[] {
-  if (!folderId) return [];
-
-  const path: FileManagerNode[] = [];
-
-  const walk = (folders: FileManagerNode[]): boolean => {
-    for (const node of folders) {
-      if (node.id === folderId) {
-        path.push(node);
-        return true;
-      }
-      if (node.kind === "folder" && walk(node.children ?? [])) {
-        path.unshift(node);
-        return true;
-      }
-    }
-    return false;
-  };
-
-  walk(nodes);
-  return path;
+  return breadcrumbsFromIndex(buildTreeIndex(nodes), folderId);
 }
 
 function formatPath(parts: string[], rootLabel: string): string {

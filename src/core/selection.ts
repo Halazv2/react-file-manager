@@ -1,4 +1,4 @@
-import type { FileManagerItem } from "./types";
+import type { FileManagerItem } from "../types";
 
 export function idsInRange(
   items: FileManagerItem[],
