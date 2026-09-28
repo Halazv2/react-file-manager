@@ -10,7 +10,7 @@ import { StarIcon, StarSolidIcon } from "../icons";
 import { getFavoriteFolderIds, getRecentFolderIds, MAX_RECENT_FOLDERS, pushRecentFolderId, toggleFavoriteFolderId } from "../adapters/pins";
 import { buildFilePreview } from "../adapters/preview";
 import { idsInRange } from "../core/selection";
-import { folderHasChildFolders, getExtension, listFolder, searchNodes } from "../core/tree";
+import { folderHasChildFolders, getExtension, getNodeById, listFolder, searchNodes } from "../core/tree";
 import { breadcrumbsFromIndex, buildTreeIndex, folderContainsIdInIndex, getIndexedNode } from "../core/treeIndex";
 import type { DropTargetId, FileManagerAction, FileManagerItem, FileManagerProps, FileManagerView, FilePreviewResult } from "../types";
 import { resolveLabels } from "../labels";
@@ -55,6 +55,8 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     onGetPreviewUrl,
     getItemActions,
     getBulkActions,
+    getDetailRows,
+    renderDetailActions,
     renderIcon,
     renderPreview,
     renderActions,
@@ -92,8 +94,8 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     node: FileManagerItem;
   } | null>(null);
 
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const rootRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const [dnd, dispatchDnd] = useReducer(dndReducer, DND_IDLE);
   const dndRef = useRef(dnd);
   const selectedIdsRef = useRef<string[]>([]);
@@ -880,6 +882,18 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
         },
       });
     }
+    if (onDownloadFile) {
+      const fileIds = selectedIds.filter((id) => getNodeById(nodes, id)?.kind === "file");
+      if (fileIds.length) {
+        actions.push({
+          id: "download",
+          label: labels.download,
+          onClick: () => {
+            for (const id of fileIds) void onDownloadFile(id);
+          }
+        });
+      }
+    }
     if (canManage && onDelete) {
       actions.push({
         id: "delete",
@@ -889,7 +903,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
       });
     }
     return actions;
-  }, [canManage, getBulkActions, handleDelete, labels, onDelete, onOpenFile, selectedIds]);
+  }, [canManage, getBulkActions, handleDelete, labels, nodes, onDelete, onDownloadFile, onOpenFile, selectedIds]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>): void => {
@@ -1020,6 +1034,8 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     renderIcon,
     renderPreview,
     renderActions,
+    getDetailRows,
+    renderDetailActions,
     onCreateFolder,
     onCreateFile,
     onUpload: handleUpload,

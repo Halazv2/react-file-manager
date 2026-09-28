@@ -126,7 +126,7 @@ function chipLabelColor(accent: string): string {
   return luminance > 0.55 ? "#111827" : "#fff";
 }
 
-export function FileTypeIcon({ extension, size = 40, ...props }: FileTypeIconProps) {
+export function FileTypeIcon({ extension, size = 16, ...props }: FileTypeIconProps) {
   const normalizedExtension = extension?.replace(/^\./, "").toLowerCase() || "";
   const family = FILE_FAMILIES[normalizedExtension] || {
     accent: "#155EEF",
@@ -153,7 +153,7 @@ export function FileTypeIcon({ extension, size = 40, ...props }: FileTypeIconPro
   );
 }
 
-export function FolderTypeIcon({ size = 40, ...props }: FolderTypeIconProps) {
+export function FolderTypeIcon({ size = 16, ...props }: FolderTypeIconProps) {
   return (
     <svg width={size} height={size} fill='none' viewBox='0 0 40 40' aria-hidden='true' {...props}>
       <path fill='#E8B931' d='M4 11.5C4 9.567 5.567 8 7.5 8H16l2.4 2.4c.375.375.883.6 1.414.6H32.5C34.433 11 36 12.567 36 14.5V15H4v-3.5Z' />
@@ -165,4 +165,13 @@ export function FolderTypeIcon({ size = 40, ...props }: FolderTypeIconProps) {
 export function defaultNodeIcon(node: FileManagerNode, size = 16): ReactNode {
   if (node.kind === "folder") return <FolderTypeIcon size={size} />;
   return <FileTypeIcon extension={getExtension(node)} size={size} />;
+}
+
+/** Locks an icon to `size` so host CSS cannot stretch the svg. */
+export function IconFrame({ size, children }: { size: number; children: ReactNode }): ReactNode {
+  return (
+    <span className="rfm-glyph" style={{ width: size, height: size }}>
+      {children}
+    </span>
+  );
 }

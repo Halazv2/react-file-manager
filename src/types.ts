@@ -38,6 +38,14 @@ export interface FileManagerAction {
   onClick: () => void | Promise<void>;
 }
 
+/** Extra inspector row. `stacked` puts the value under the label. */
+export interface FileManagerDetailRow {
+  id: string;
+  label: string;
+  value: ReactNode;
+  stacked?: boolean;
+}
+
 export type PreviewKind = "image" | "pdf" | "text" | "icon";
 
 export interface FilePreviewResult {
@@ -129,6 +137,10 @@ export interface FileManagerProps {
   onGetPreviewUrl?: (id: string) => string | null | Promise<string | null>;
   getItemActions?: (node: FileManagerNode) => FileManagerAction[];
   getBulkActions?: (ids: string[]) => FileManagerAction[];
+  /** Extra inspector rows after Type / Pages. */
+  getDetailRows?: (node: FileManagerItem) => FileManagerDetailRow[];
+  /** Extra inspector actions, shown with View and Download. */
+  renderDetailActions?: (node: FileManagerItem) => ReactNode;
   renderIcon?: (node: FileManagerNode, size?: number) => ReactNode;
   renderPreview?: (node: FileManagerItem | null) => ReactNode;
   renderActions?: (node: FileManagerNode) => ReactNode;

@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 
 import { FolderTree } from "./Item";
 import { focusFirstMenuItem, onMenuKeyDown } from "./ActionMenu";
-import { defaultNodeIcon } from "../fileIcons";
+import { defaultNodeIcon, IconFrame } from "../fileIcons";
 import {
   CollapseIcon,
   FileIcon,
@@ -162,7 +162,9 @@ export function Sidebar() {
                 onClick={() => openFolder(folder.id)}
                 {...folderDropHandlers(folder.id)}
               >
-                {renderIcon?.(folder, 14) ?? defaultNodeIcon(folder, 14)}
+                <IconFrame size={16}>
+                  {renderIcon?.(folder, 16) ?? defaultNodeIcon(folder, 16)}
+                </IconFrame>
                 <span className="rfm-item-name">{folder.name}</span>
                 <span
                   role="button"

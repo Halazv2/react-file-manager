@@ -33,7 +33,8 @@ export default defineConfig({
         "react",
         "react-dom",
         "react/jsx-runtime",
-        "@tanstack/react-virtual"
+        "@tanstack/react-virtual",
+        "pdfjs-dist"
       ]
     }
   }

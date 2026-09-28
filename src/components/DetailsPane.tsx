@@ -1,4 +1,4 @@
-import { defaultNodeIcon } from "../fileIcons";
+import { defaultNodeIcon, IconFrame } from "../fileIcons";
 import { formatBytes } from "../formatBytes";
 import { DownloadIcon, StarIcon, StarSolidIcon } from "../icons";
 import { useFileManagerContext } from "../context";
@@ -6,7 +6,7 @@ import { cn } from "../styles";
 import { getExtension } from "../core/tree";
 
 export function DetailsPane() {
-  const { selectedNode, renderIcon, renderPreview, renderActions, preview, isPreviewLoading, favoriteIds, toggleFavorite, storageKey, onOpenFile, onDownloadFile, canManage, classNames, labels } =
+  const { selectedNode, renderIcon, renderPreview, renderActions, getDetailRows, renderDetailActions, preview, isPreviewLoading, favoriteIds, toggleFavorite, storageKey, onOpenFile, onDownloadFile, canManage, classNames, labels } =
     useFileManagerContext();
 
   if (renderPreview) {
@@ -21,7 +21,9 @@ export function DetailsPane() {
     return (
       <aside className={cn("rfm-details", classNames?.details)}>
         <div className="rfm-details-empty">
-          {renderIcon?.({ id: "empty", name: "", kind: "folder" }, 56) ?? defaultNodeIcon({ id: "empty", name: "", kind: "folder" }, 56)}
+          <IconFrame size={40}>
+            {renderIcon?.({ id: "empty", name: "", kind: "folder" }, 40) ?? defaultNodeIcon({ id: "empty", name: "", kind: "folder" }, 40)}
+          </IconFrame>
           <p>{labels.detailsEmpty}</p>
           <p className="rfm-details-hint">{labels.keyboardHint}</p>
         </div>
@@ -57,7 +59,9 @@ export function DetailsPane() {
             <pre className="rfm-preview-text">{preview?.text}</pre>
           ) : (
             <>
-              {renderIcon?.(selectedNode, 64) ?? defaultNodeIcon(selectedNode, 64)}
+              <IconFrame size={40}>
+                {renderIcon?.(selectedNode, 40) ?? defaultNodeIcon(selectedNode, 40)}
+              </IconFrame>
               <span className="rfm-item-meta">{isFolder ? labels.itemsCount(childCount) : (extension || labels.file).toUpperCase()}</span>
             </>
           )}
@@ -92,30 +96,39 @@ export function DetailsPane() {
                 )}
               </>
             )}
+            {getDetailRows?.(selectedNode).map((row) => (
+              <div key={row.id} className="rfm-details-row" data-stacked={row.stacked || undefined}>
+                <dt>{row.label}</dt>
+                <dd>{row.value}</dd>
+              </div>
+            ))}
           </dl>
 
-          {renderActions ? (
-            <div className="rfm-details-actions">{renderActions(selectedNode)}</div>
-          ) : isFolder && storageKey ? (
-            <button type="button" className="rfm-button rfm-button-secondary" style={{ width: "100%", marginBlockStart: 12 }} onClick={(event) => toggleFavorite(event, selectedNode.id)}>
-              {favoriteIds.includes(selectedNode.id) ? <StarSolidIcon className="rfm-star" size={16} /> : <StarIcon size={16} />}
-              {favoriteIds.includes(selectedNode.id) ? labels.pinned : labels.pin}
-            </button>
-          ) : (
-            <div className="rfm-details-actions">
-              {onOpenFile && (
-                <button type="button" className="rfm-button rfm-button-primary" onClick={() => onOpenFile(selectedNode.id)}>
-                  {labels.view}
-                </button>
-              )}
-              {onDownloadFile && canManage !== false && (
-                <button type="button" className="rfm-button rfm-button-secondary" onClick={() => void onDownloadFile(selectedNode.id)}>
-                  <DownloadIcon size={16} />
-                  {labels.download}
-                </button>
-              )}
-            </div>
-          )}
+          <div className="rfm-details-actions">
+            {renderDetailActions?.(selectedNode)}
+            {renderActions ? (
+              renderActions(selectedNode)
+            ) : isFolder && storageKey ? (
+              <button type="button" className="rfm-button rfm-button-secondary" onClick={(event) => toggleFavorite(event, selectedNode.id)}>
+                {favoriteIds.includes(selectedNode.id) ? <StarSolidIcon className="rfm-star" size={16} /> : <StarIcon size={16} />}
+                {favoriteIds.includes(selectedNode.id) ? labels.pinned : labels.pin}
+              </button>
+            ) : (
+              <>
+                {onOpenFile && (
+                  <button type="button" className="rfm-button rfm-button-primary" onClick={() => onOpenFile(selectedNode.id)}>
+                    {labels.view}
+                  </button>
+                )}
+                {onDownloadFile && canManage !== false && (
+                  <button type="button" className="rfm-button rfm-button-secondary" onClick={() => void onDownloadFile(selectedNode.id)}>
+                    <DownloadIcon size={16} />
+                    {labels.download}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </aside>

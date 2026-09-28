@@ -182,7 +182,9 @@ Every `FileManagerProps` field:
 | `onDownloadFile` / `onDownloadFolder` | `(id) => void` | Download hooks. |
 | `onDelete` | `(ids) => void` | Delete / Backspace. |
 | `getItemActions` | `(node) => FileManagerAction[]` | Context / more menu items. |
-| `getBulkActions` | `(ids) => FileManagerAction[]` | Multi-select bar actions. |
+| `getBulkActions` | `(ids) => FileManagerAction[]` | Multi-select bar actions. Includes Download for selected files when `onDownloadFile` is set. |
+| `getDetailRows` | `(node) => FileManagerDetailRow[]` | Extra inspector rows after Type and Pages. |
+| `renderDetailActions` | `(node) => ReactNode` | Extra inspector buttons, kept with View and Download. |
 | `canManage` | `boolean` | Disables drag, drop, and mutations. Default `true`. |
 | `enablePreview` | `boolean` | Default `true` when `onGetPreviewUrl` is set. |
 | `springLoadDelay` | `number` | Hover delay in ms. Default `500`. |

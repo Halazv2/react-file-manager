@@ -14,6 +14,7 @@ import type {
   FileManagerAction,
   FileManagerClassNames,
   FileManagerComponents,
+  FileManagerDetailRow,
   FileManagerItem,
   FileManagerNode,
   FileManagerView,
@@ -38,7 +39,7 @@ export interface FileManagerContextValue {
   viewItems: FileManagerItem[];
   breadcrumbs: FileManagerNode[];
   showDetails: boolean;
-  fileInputRef: RefObject<HTMLInputElement | null>;
+  fileInputRef: RefObject<HTMLInputElement>;
   folderDropHandlers: (targetId: string | "root") => {
     onDragEnter: (event: DragEvent<HTMLElement>) => void;
     onDragOver: (event: DragEvent<HTMLElement>) => void;
@@ -65,6 +66,8 @@ export interface FileManagerContextValue {
   renderIcon?: (node: FileManagerNode, size?: number) => ReactNode;
   renderPreview?: (node: FileManagerItem | null) => ReactNode;
   renderActions?: (node: FileManagerNode) => ReactNode;
+  getDetailRows?: (node: FileManagerItem) => FileManagerDetailRow[];
+  renderDetailActions?: (node: FileManagerItem) => ReactNode;
   onCreateFolder?: (parentId: string | null) => void;
   onCreateFile?: (folderId: string | null) => void;
   onUpload?: (files: File[], folderId: string | null) => void | Promise<void>;
@@ -88,7 +91,7 @@ export interface FileManagerContextValue {
   openContextMenu: (node: FileManagerItem, event: MouseEvent) => void;
   closeContextMenu: () => void;
   classNames?: FileManagerClassNames;
-  rootRef: RefObject<HTMLDivElement | null>;
+  rootRef: RefObject<HTMLDivElement>;
   labels: FileManagerLabels;
   liveMessage: string;
   editingId: string | null;

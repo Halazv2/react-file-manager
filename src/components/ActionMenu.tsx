@@ -56,8 +56,8 @@ export function focusFirstMenuItem(menu: HTMLElement | null): void {
   focusableItems(menu)[0]?.focus();
 }
 
-export function ActionMenu({ actions, open, onClose, anchorRef }: { actions: FileManagerAction[]; open: boolean; onClose: () => void; anchorRef: RefObject<HTMLElement | null> }) {
-  const menuRef = useRef<HTMLDivElement>(null);
+export function ActionMenu({ actions, open, onClose, anchorRef }: { actions: FileManagerAction[]; open: boolean; onClose: () => void; anchorRef: RefObject<HTMLElement> }) {
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const focusedOnce = useRef(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const { classNames } = useFileManagerContext();
@@ -152,7 +152,7 @@ export function MoreMenuButton({ actions, label }: { actions: FileManagerAction[
 }
 
 export function ContextMenuLayer({ actions, position, onClose }: { actions: FileManagerAction[]; position: { x: number; y: number } | null; onClose: () => void }) {
-  const menuRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const focusedOnce = useRef(false);
   const { classNames } = useFileManagerContext();
 

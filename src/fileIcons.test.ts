@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { FileTypeIcon } from "./fileIcons";
 
 function renderFileIcon(extension?: string) {
-  return renderToStaticMarkup(createElement(FileTypeIcon, { extension }));
+  return renderToStaticMarkup(createElement(FileTypeIcon, { extension, size: 40 }));
 }
 
 describe("FileTypeIcon", () => {

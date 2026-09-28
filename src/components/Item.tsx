@@ -2,7 +2,7 @@ import { memo, useEffect, useMemo, useRef } from "react";
 
 import { BulkActionBar, ContextMenuLayer, MoreMenuButton } from "./ActionMenu";
 import { ItemErrorBoundary } from "./ItemErrorBoundary";
-import { defaultNodeIcon } from "../fileIcons";
+import { defaultNodeIcon, IconFrame } from "../fileIcons";
 import { StarSolidIcon } from "../icons";
 import { useFileManagerContext } from "../context";
 import { cn } from "../styles";
@@ -77,7 +77,9 @@ export const Item = memo(function Item({ item, index }: { item: FileManagerItem;
             activateItem(item);
           }}
           onContextMenu={(event) => openContextMenu(item, event)}>
-          {renderIcon?.(item, view === "cards" ? 36 : 18) ?? defaultNodeIcon(item, view === "cards" ? 36 : 18)}
+          <IconFrame size={view === "cards" ? 28 : 16}>
+            {renderIcon?.(item, view === "cards" ? 28 : 16) ?? defaultNodeIcon(item, view === "cards" ? 28 : 16)}
+          </IconFrame>
           <span className="rfm-item-name">
             {isEditing ? (
               <input
@@ -214,7 +216,9 @@ export function FolderTree({ folders, depth = 0 }: { folders: FileManagerItem[];
               ) : (
                 <span className="rfm-tree-chevron" aria-hidden style={{ visibility: "hidden" }} />
               )}
-              {renderIcon?.(node, 16) ?? defaultNodeIcon(node, 16)}
+              <IconFrame size={16}>
+                {renderIcon?.(node, 16) ?? defaultNodeIcon(node, 16)}
+              </IconFrame>
               <span className="rfm-item-name" title={node.name}>
                 {node.name}
               </span>

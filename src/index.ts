@@ -27,6 +27,7 @@ export type {
   DropTargetId,
   FileManagerAction,
   FileManagerClassNames,
+  FileManagerDetailRow,
   FileManagerComponents,
   FileManagerDropItem,
   FileManagerItem,

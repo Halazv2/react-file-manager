@@ -42,8 +42,7 @@
   --rfm-danger: #f87171;
   --rfm-icon-outline: color-mix(in srgb, var(--rfm-text) 28%, transparent);
   --rfm-shadow:
-    0 1px 2px color-mix(in srgb, #000 40%, transparent),
-    0 8px 24px color-mix(in srgb, #000 45%, transparent);
+    0 1px 2px color-mix(in srgb, #000 40%, transparent), 0 8px 24px color-mix(in srgb, #000 45%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -61,8 +60,7 @@
     --rfm-danger: #f87171;
     --rfm-icon-outline: color-mix(in srgb, var(--rfm-text) 28%, transparent);
     --rfm-shadow:
-      0 1px 2px color-mix(in srgb, #000 40%, transparent),
-      0 8px 24px color-mix(in srgb, #000 45%, transparent);
+      0 1px 2px color-mix(in srgb, #000 40%, transparent), 0 8px 24px color-mix(in srgb, #000 45%, transparent);
   }
 }
 
@@ -465,6 +463,20 @@
   opacity: 0.45;
 }
 
+.rfm-glyph {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.rfm-glyph > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .rfm-tree-row {
   display: flex;
   width: 100%;
@@ -793,7 +805,7 @@
 }
 
 .rfm-details-body {
-  display: flex;
+  /* display: flex; */
   min-height: 0;
   flex: 1;
   flex-direction: column;
@@ -1077,6 +1089,22 @@
   margin: 0;
   font-weight: 500;
   color: var(--rfm-text);
+  text-align: end;
+}
+
+.rfm-details-row[data-stacked] {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.rfm-details-row[data-stacked] dd {
+  font-weight: 400;
+  text-align: start;
+}
+
+.rfm-details-actions > .rfm-button {
+  width: 100%;
 }
 
 .rfm-crumb-group {
