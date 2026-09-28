@@ -31,6 +31,11 @@ export function FileManager(props: FileManagerProps) {
             <div className="rfm-live" aria-live="polite" aria-atomic="true">
               {value.liveMessage}
             </div>
+            {value.dragNotice && (
+              <div className="rfm-drag-notice" role="status">
+                {value.dragNotice}
+              </div>
+            )}
             <div className={cn("rfm-layout", classNames?.layout)} data-details={value.showDetails ? undefined : "false"}>
               <SidebarSlot />
               <BrowserSlot />

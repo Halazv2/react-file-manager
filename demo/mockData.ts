@@ -26,7 +26,14 @@ export const initialNodes: FileManagerNode[] = [
         name: "Notes",
         kind: "folder",
         children: [
-          { id: "todo", name: "todo.md", kind: "file", extension: "md", size: 1024 },
+          {
+            id: "todo",
+            name: "todo.md",
+            kind: "file",
+            extension: "md",
+            size: 1024,
+            meta: { downloadUrl: "data:text/markdown,# Todo%0A- Ship drag-out support" },
+          },
           { id: "ideas", name: "ideas.txt", kind: "file", extension: "txt", size: 4096 },
         ],
       },
@@ -43,8 +50,26 @@ export const initialNodes: FileManagerNode[] = [
         name: "Vacation",
         kind: "folder",
         children: [
-          { id: "beach", name: "beach.jpg", kind: "file", extension: "jpg", size: 2_400_000 },
-          { id: "hike", name: "hike.png", kind: "file", extension: "png", size: 890_000 },
+          {
+            id: "beach",
+            name: "beach.jpg",
+            kind: "file",
+            extension: "jpg",
+            size: 2_400_000,
+            meta: {
+              downloadUrl: "data:image/gif;base64,R0lGODlhAQABAIAAAP8AAP///ywAAAAAAQABAAACAUwAOw==",
+            },
+          },
+          {
+            id: "hike",
+            name: "hike.png",
+            kind: "file",
+            extension: "png",
+            size: 890_000,
+            meta: {
+              downloadUrl: "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==",
+            },
+          },
         ],
       },
       { id: "headshot", name: "headshot.jpg", kind: "file", extension: "jpg", size: 640_000 },

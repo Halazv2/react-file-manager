@@ -18,7 +18,7 @@ export default function App() {
       setNodes((current) => moveNodes(current, ids, targetFolderId));
       notify(`Moved ${ids.length} item${ids.length === 1 ? "" : "s"}`);
     },
-    [notify],
+    [notify]
   );
 
   const onCreateFolder = useCallback((parentId: string | null) => {
@@ -39,7 +39,7 @@ export default function App() {
       setNodes((current) => uploaded.reduce((tree, node) => insertNode(tree, folderId, node), current));
       notify(`Uploaded ${files.length} file${files.length === 1 ? "" : "s"}`);
     },
-    [notify],
+    [notify]
   );
 
   const onImport = useCallback(
@@ -47,9 +47,13 @@ export default function App() {
       const imported = items.map(dropItemToNode);
       setNodes((current) => imported.reduce((tree, node) => insertNode(tree, folderId, node), current));
       const folderCount = items.filter((item) => item.kind === "folder").length;
-      notify(folderCount ? `Imported ${folderCount} folder${folderCount === 1 ? "" : "s"}` : `Uploaded ${items.length} file${items.length === 1 ? "" : "s"}`);
+      notify(
+        folderCount
+          ? `Imported ${folderCount} folder${folderCount === 1 ? "" : "s"}`
+          : `Uploaded ${items.length} file${items.length === 1 ? "" : "s"}`
+      );
     },
-    [notify],
+    [notify]
   );
 
   const onDelete = useCallback(
@@ -58,42 +62,49 @@ export default function App() {
       setNodes((current) => removeNodes(current, ids));
       notify("Deleted");
     },
-    [notify],
+    [notify]
   );
 
   return (
-    <div className='flex min-h-full flex-col items-center px-6 py-10'>
-      <div className='mb-6 w-full max-w-6xl'>
-        <p className='m-0 text-sm font-semibold tracking-wide text-blue-700'>@halazv2/react-file-manager</p>
-        <h1 className='mt-1 mb-2 text-3xl font-semibold tracking-tight text-gray-900'>Finder-style file browser for React</h1>
-        <p className='m-0 max-w-2xl text-[15px] leading-relaxed text-gray-600'>
-          Drag a file onto a folder and hold — the folder spring-loads open, just like macOS Finder. Bring your own data and API.
+    <div className="flex min-h-full flex-col items-center px-6 py-10">
+      <div className="mb-6 w-full max-w-6xl">
+        <p className="m-0 text-sm font-semibold tracking-wide text-blue-700">@halazv2/react-file-manager</p>
+        <h1 className="mt-1 mb-2 text-3xl font-semibold tracking-tight text-gray-900">
+          Finder-style file browser for React
+        </h1>
+        <p className="m-0 max-w-2xl text-[15px] leading-relaxed text-gray-600">
+          Drag a file onto a folder and hold — the folder spring-loads open, just like macOS Finder. Bring your own data
+          and API.
         </p>
       </div>
 
-      <div data-demo-window className='h-[640px] w-full max-w-6xl overflow-hidden rounded-2xl border border-black/10 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]'>
-        <div className='flex h-10 items-center gap-2 border-b border-black/[0.06] bg-gray-100 px-3'>
-          <span className='h-3 w-3 rounded-full bg-[#ff5f57]' />
-          <span className='h-3 w-3 rounded-full bg-[#febc2e]' />
-          <span className='h-3 w-3 rounded-full bg-[#28c840]' />
-          <span className='ml-3 text-[13px] font-medium text-gray-500'>My files</span>
-          <span className='ml-auto flex gap-1'>
+      <div
+        data-demo-window
+        className="h-[640px] w-full max-w-6xl overflow-hidden rounded-2xl border border-black/10 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
+      >
+        <div className="flex h-10 items-center gap-2 border-b border-black/[0.06] bg-gray-100 px-3">
+          <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
+          <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
+          <span className="h-3 w-3 rounded-full bg-[#28c840]" />
+          <span className="ml-3 text-[13px] font-medium text-gray-500">My files</span>
+          <span className="ml-auto flex gap-1">
             {(["system", "light", "dark"] as const).map((value) => (
               <button
                 key={value}
-                type='button'
-                className='rounded-md border-0 bg-transparent px-2 py-0.5 text-[11px] font-medium text-gray-600 hover:bg-black/5'
+                type="button"
+                className="rounded-md border-0 bg-transparent px-2 py-0.5 text-[11px] font-medium text-gray-600 hover:bg-black/5"
                 aria-pressed={theme === value}
-                onClick={() => setTheme(value)}>
+                onClick={() => setTheme(value)}
+              >
                 {value}
               </button>
             ))}
           </span>
         </div>
-        <div className='h-[calc(640px-2.5rem)]'>
+        <div className="h-[calc(640px-2.5rem)]">
           <FileManager
             nodes={nodes}
-            storageKey='demo-file-manager'
+            storageKey="demo-file-manager"
             theme={theme === "system" ? undefined : theme}
             onMove={onMove}
             onCreateFolder={onCreateFolder}
@@ -113,11 +124,18 @@ export default function App() {
               const url = node?.meta?.previewUrl;
               return typeof url === "string" ? url : null;
             }}
+            onGetDownloadUrl={(item) => {
+              const node = findNode(nodes, item.id);
+              const url = node?.meta?.downloadUrl;
+              return typeof url === "string" ? url : null;
+            }}
           />
         </div>
       </div>
 
-      {toast && <div className='fixed bottom-6 rounded-full bg-gray-900 px-4 py-2 text-sm text-white shadow-lg'>{toast}</div>}
+      {toast && (
+        <div className="fixed bottom-6 rounded-full bg-gray-900 px-4 py-2 text-sm text-white shadow-lg">{toast}</div>
+      )}
     </div>
   );
 }

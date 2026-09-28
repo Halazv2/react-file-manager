@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { clearDragFileCache } from "./adapters/dragOutFiles";
 import { FileManager } from "./FileManager";
 import { FILE_MANAGER_DRAG_MIME } from "./core/droppedItems";
 import type { FileManagerNode } from "./types";
@@ -63,6 +64,8 @@ function selected(name: string) {
 
 afterEach(() => {
   cleanup();
+  clearDragFileCache();
+  vi.unstubAllGlobals();
   vi.useRealTimers();
 });
 
@@ -175,6 +178,34 @@ describe("FileManager characterization", () => {
     expect(onSearchChange).toHaveBeenLastCalledWith("notes");
     expect(await within(folderContents()).findByRole("option", { name: "notes.txt" })).toBeTruthy();
     expect(within(folderContents()).queryByRole("option", { name: "README.md" })).toBeNull();
+  });
+
+  it("drags fetched file bytes and does not publish a file: url", async () => {
+    const blob = new Blob(["hello"], { type: "text/plain" });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, blob: async () => blob }));
+    renderManager({
+      onGetDownloadUrl: (item) => `https://cdn.example/${item.id}`,
+    });
+
+    const added: File[] = [];
+    const dataTransfer = createDataTransfer();
+    dataTransfer.items = { add: (file: File) => added.push(file) } as DataTransferItemList;
+
+    fireEvent.dragStart(option("README.md"), { dataTransfer });
+    expect(added).toHaveLength(0);
+    expect(dataTransfer.getData("text/plain")).toBe("README.md");
+    expect(dataTransfer.getData("text/plain")).not.toMatch(/^file:/);
+    await waitFor(() => {
+      expect(screen.getByRole("status")).toHaveTextContent("ready");
+    });
+
+    const loaded = createDataTransfer();
+    loaded.items = { add: (file: File) => added.push(file) } as DataTransferItemList;
+    fireEvent.dragStart(option("README.md"), { dataTransfer: loaded });
+
+    expect(added.map((file) => file.name)).toEqual(["README.md"]);
+    expect(loaded.getData("DownloadURL")).toBe("");
+    expect(loaded.getData("text/plain")).toBe("");
   });
 
   it("invokes onMove when an item is dropped onto a folder", async () => {

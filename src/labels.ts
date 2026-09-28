@@ -48,6 +48,8 @@ export interface FileManagerLabels {
   renamed: (name: string) => string;
   searchResults: (query: string) => string;
   operationFailed: (operation: string) => string;
+  dragOutPreparing: string;
+  dragOutReady: string;
 }
 
 export const DEFAULT_LABELS: FileManagerLabels = {
@@ -100,6 +102,8 @@ export const DEFAULT_LABELS: FileManagerLabels = {
   renamed: (name) => `Renamed to ${name}`,
   searchResults: (query) => `Showing results for ${query}`,
   operationFailed: (operation) => `${operation} failed`,
+  dragOutPreparing: "Preparing files. Drag them out again in a moment.",
+  dragOutReady: "Files are ready. Drag them out of the browser.",
 };
 
 export function resolveLabels(partial?: Partial<FileManagerLabels>): FileManagerLabels {

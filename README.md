@@ -79,6 +79,7 @@ export function App() {
         }
         onOpenFile={(id) => console.log("open", id)}
         onGetPreviewUrl={(id) => `/api/files/${id}/preview`}
+        onGetDownloadUrl={(item) => `/api/files/${item.id}/download`}
         onUpload={(files, folderId) => console.log(files, folderId)}
         onImport={(items, folderId) => console.log(items, folderId)}
         onCreateFolder={(parentId) => console.log("new folder in", parentId)}
@@ -107,6 +108,7 @@ The component fills its parent. Give the parent a height.
 - Breadcrumbs, multi-select, keyboard navigation
 - Drag-and-drop move with spring-loaded folders
 - OS file drops via `onUpload`; OS folder drops via `onImport` (keeps the folder tree)
+- Drag files out of the browser onto the OS (Finder, Explorer, email clients) via `onGetDownloadUrl`. The file bytes are fetched and placed on the drag, including multi-file selections. This avoids the browser download manager and URL shortcuts.
 - Virtualized list view for large folders
 - In-pane preview: images always; PDF first page + text when `pdfjs-dist` is installed and `onGetPreviewUrl` is set
 - Context / “more” menus via `getItemActions`
@@ -172,6 +174,7 @@ Every `FileManagerProps` field:
 | `onMove` | `(ids, folderId) => void` | Fired on drop. Use `moveNodes` for local state. |
 | `onOpenFile` | `(id) => void` | Double-click or Enter on a file. |
 | `onGetPreviewUrl` | `(id) => string \| null \| Promise<…>` | Preview URL for details pane. |
+| `onGetDownloadUrl` | `(item: FileManagerItem) => string \| null \| undefined` | Absolute URL per file. Bytes are fetched and dragged out as real files, including multi-file selections. Must resolve synchronously. The page must be allowed to `fetch` the URL. |
 | `onUpload` | `(files, folderId) => void` | File picker or OS file drop. Folder drops without `onImport` are flattened into files with `webkitRelativePath`. |
 | `onImport` | `(items, folderId) => void` | OS folder (and mixed) drops as a tree. Prefer this to create folders instead of documents. |
 | `onCreateFolder` | `(parentId) => void` | New folder action. |

@@ -105,21 +105,12 @@ export interface FileManagerProps {
   enablePreview?: boolean;
   pdfWorkerSrc?: string;
   previewFetchInit?: RequestInit;
-  onMove?: (
-    ids: string[],
-    targetFolderId: string | null
-  ) => void | Promise<void>;
+  onMove?: (ids: string[], targetFolderId: string | null) => void | Promise<void>;
   onOpenFile?: (id: string) => void;
   onOpenFolder?: (id: string | null) => void;
-  onUpload?: (
-    files: File[],
-    folderId: string | null
-  ) => void | Promise<void>;
+  onUpload?: (files: File[], folderId: string | null) => void | Promise<void>;
   /** OS folder/file drops. Folders keep their tree; files are `{ kind: "file", file }`. */
-  onImport?: (
-    items: FileManagerDropItem[],
-    folderId: string | null
-  ) => void | Promise<void>;
+  onImport?: (items: FileManagerDropItem[], folderId: string | null) => void | Promise<void>;
   onCreateFolder?: (parentId: string | null) => void;
   onCreateFile?: (folderId: string | null) => void;
   onDelete?: (ids: string[]) => void;
@@ -127,6 +118,12 @@ export interface FileManagerProps {
   onDownloadFile?: (id: string) => void | Promise<void>;
   onDownloadFolder?: (id: string) => void | Promise<void>;
   onGetPreviewUrl?: (id: string) => string | null | Promise<string | null>;
+  /**
+   * Fetchable URL for a file. The bytes are read ahead of the drag and placed on the drag as
+   * real files, so the OS receives the file instead of a download or a URL shortcut.
+   * Must resolve synchronously; return a stable absolute server URL the page can fetch.
+   */
+  onGetDownloadUrl?: (item: FileManagerItem) => string | null | undefined;
   getItemActions?: (node: FileManagerNode) => FileManagerAction[];
   getBulkActions?: (ids: string[]) => FileManagerAction[];
   renderIcon?: (node: FileManagerNode, size?: number) => ReactNode;

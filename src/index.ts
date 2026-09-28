@@ -16,13 +16,39 @@ export {
   readFileSystemEntries,
 } from "./core/droppedItems";
 export { folderDropTargetHandlers } from "./adapters/dropTarget";
+export {
+  buildDownloadUrlEntries,
+  DOWNLOAD_URL_LIST_MIME,
+  DOWNLOAD_URL_MIME,
+  downloadFileName,
+  formatDownloadUrl,
+  guessMimeType,
+} from "./adapters/downloadUrl";
+export type { DownloadUrlEntry } from "./adapters/downloadUrl";
 export { defaultNodeIcon, FileTypeIcon, FolderTypeIcon } from "./fileIcons";
 export type { FileTypeIconProps, FolderTypeIconProps } from "./fileIcons";
 export { buildFilePreview, isImageExtension, isPdfExtension, isTextExtension } from "./adapters/preview";
-export { getFavoriteFolderIds, getRecentFolderIds, MAX_RECENT_FOLDERS, pushRecentFolderId, toggleFavoriteFolderId } from "./adapters/pins";
+export {
+  getFavoriteFolderIds,
+  getRecentFolderIds,
+  MAX_RECENT_FOLDERS,
+  pushRecentFolderId,
+  toggleFavoriteFolderId,
+} from "./adapters/pins";
 export { DEFAULT_LABELS, resolveLabels } from "./labels";
 export type { FileManagerLabels } from "./labels";
-export { folderContainsId, folderHasChildFolders, folderHasChildren, getBreadcrumbs, getExtension, getFolderContents, getNodeById, listFolder, moveNodes, searchNodes } from "./core/tree";
+export {
+  folderContainsId,
+  folderHasChildFolders,
+  folderHasChildren,
+  getBreadcrumbs,
+  getExtension,
+  getFolderContents,
+  getNodeById,
+  listFolder,
+  moveNodes,
+  searchNodes,
+} from "./core/tree";
 export type {
   DropTargetId,
   FileManagerAction,

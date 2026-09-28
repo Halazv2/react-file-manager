@@ -91,6 +91,7 @@ export interface FileManagerContextValue {
   rootRef: RefObject<HTMLDivElement | null>;
   labels: FileManagerLabels;
   liveMessage: string;
+  dragNotice: string | null;
   editingId: string | null;
   startRename: (id: string) => void;
   commitRename: (id: string, name: string) => void;
