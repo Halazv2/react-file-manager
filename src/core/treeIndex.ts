@@ -4,6 +4,7 @@ export interface TreeIndex {
   byId: Map<string, FileManagerNode>;
   parentOf: Map<string, string | null>;
   childrenOf: Map<string | null, FileManagerNode[]>;
+  allFolderIds: Set<string>;
 }
 
 export function buildTreeIndex(nodes: FileManagerNode[]): TreeIndex {
@@ -21,7 +22,13 @@ export function buildTreeIndex(nodes: FileManagerNode[]): TreeIndex {
   };
 
   walk(nodes, null);
-  return { byId, parentOf, childrenOf };
+  const allFolderIds = new Set<string>();
+  for (const [id, node] of byId) {
+    if (node.kind === "folder") {
+      allFolderIds.add(id);
+    }
+  }
+  return { byId, parentOf, childrenOf, allFolderIds };
 }
 
 export function getIndexedNode(index: TreeIndex, id: string | null): FileManagerNode | null {

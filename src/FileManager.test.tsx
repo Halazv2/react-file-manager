@@ -67,6 +67,31 @@ afterEach(() => {
 });
 
 describe("FileManager characterization", () => {
+  it("toggles all sidebar folders between expanded and collapsed", async () => {
+    const user = userEvent.setup();
+    renderManager();
+
+    const toggle = screen.getByRole("button", { name: "Expand all" });
+    await user.click(toggle);
+
+    expect(screen.getByRole("treeitem", { name: "Nested" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Collapse all" })).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Collapse all" }));
+    expect(screen.queryByRole("treeitem", { name: "Nested" })).toBeNull();
+  });
+
+  it("keeps long card names within the card", () => {
+    renderManager({
+      defaultView: "cards",
+      nodes: [{ id: "long-name", name: "a-very-long-file-name-without-any-spaces-to-force-wrapping", kind: "file" }],
+    });
+
+    const name = within(folderContents()).getByText("a-very-long-file-name-without-any-spaces-to-force-wrapping");
+    expect(name).toHaveClass("rfm-item-label");
+    expect(name.parentElement).toHaveAttribute("title", "a-very-long-file-name-without-any-spaces-to-force-wrapping");
+  });
+
   it("selects a single item on click", async () => {
     const user = userEvent.setup();
     const onSelectionChange = vi.fn();

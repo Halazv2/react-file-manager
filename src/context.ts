@@ -49,6 +49,7 @@ export interface FileManagerContextValue {
   openFolder: (id: string | null) => void;
   toggleExpanded: (event: MouseEvent, id: string) => void;
   collapseAll: () => void;
+  expandAll: () => void;
   selectItem: (node: FileManagerItem, event?: MouseEvent) => void;
   selectTreeNode: (node: FileManagerItem) => void;
   activateItem: (node: FileManagerItem) => void;

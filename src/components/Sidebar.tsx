@@ -4,15 +4,7 @@ import { createPortal } from "react-dom";
 import { FolderTree } from "./Item";
 import { focusFirstMenuItem, onMenuKeyDown } from "./ActionMenu";
 import { defaultNodeIcon, IconFrame } from "../fileIcons";
-import {
-  CollapseIcon,
-  FileIcon,
-  FolderIcon,
-  HomeIcon,
-  PlusIcon,
-  StarIcon,
-  StarSolidIcon
-} from "../icons";
+import { CollapseIcon, ExpandIcon, FileIcon, FolderIcon, HomeIcon, PlusIcon, StarIcon, StarSolidIcon } from "../icons";
 import { useFileManagerContext } from "../context";
 import { cn } from "../styles";
 
@@ -25,6 +17,8 @@ export function Sidebar() {
     rootLabel,
     openFolder,
     collapseAll,
+    expandAll,
+    expandedIds,
     folderDropHandlers,
     onCreateFolder,
     onCreateFile,
@@ -35,7 +29,7 @@ export function Sidebar() {
     renderIcon,
     rootRef,
     classNames,
-    labels
+    labels,
   } = useFileManagerContext();
 
   const [addOpen, setAddOpen] = useState(false);
@@ -44,6 +38,8 @@ export function Sidebar() {
   const [addPos, setAddPos] = useState({ top: 0, left: 0, width: 0 });
 
   const canAdd = canManage && (onCreateFolder || onCreateFile);
+  const hasExpandedFolders = expandedIds.size > 0;
+  const treeToggleLabel = hasExpandedFolders ? labels.collapseAll : labels.expandAll;
 
   useEffect(() => {
     if (!addOpen || !addButtonRef.current) return;
@@ -55,10 +51,7 @@ export function Sidebar() {
     if (!addOpen) return;
     focusFirstMenuItem(addMenuRef.current);
     const onDoc = (event: globalThis.MouseEvent) => {
-      if (
-        addMenuRef.current?.contains(event.target as Node) ||
-        addButtonRef.current?.contains(event.target as Node)
-      ) {
+      if (addMenuRef.current?.contains(event.target as Node) || addButtonRef.current?.contains(event.target as Node)) {
         return;
       }
       setAddOpen(false);
@@ -100,7 +93,7 @@ export function Sidebar() {
                   top: addPos.top,
                   left: addPos.left,
                   width: Math.max(addPos.width, 200),
-                  zIndex: 1100
+                  zIndex: 1100,
                 }}
               >
                 {onCreateFolder && (
@@ -137,59 +130,60 @@ export function Sidebar() {
         </div>
       )}
 
-      <div className="rfm-toolbar-actions" style={{ justifyContent: "flex-end", width: "100%" }}>
-        <button type="button" className="rfm-collapse-all" onClick={collapseAll}>
-          <CollapseIcon size={14} />
-          {labels.collapseAll}
-        </button>
-      </div>
-
-      {storageKey && pinnedFolders.length > 0 && (
-        <div className="rfm-pins">
+      <div className="rfm-pins">
+        <div className="rfm-pins-header">
           <div className="rfm-pins-label">{labels.pinnedRecent}</div>
-          {pinnedFolders.map((folder) => {
-            const isFavorite = favoriteIds.includes(folder.id);
-            const isCurrent = viewFolderId === folder.id;
-            const isDrop = dropTargetId === folder.id;
-            return (
-              <button
-                key={`pin-${folder.id}`}
-                type="button"
-                className="rfm-pin-row"
-                aria-current={isCurrent || undefined}
-                data-drop-id={folder.id}
-                data-drop-target={isDrop || undefined}
-                onClick={() => openFolder(folder.id)}
-                {...folderDropHandlers(folder.id)}
-              >
-                <IconFrame size={16}>
-                  {renderIcon?.(folder, 16) ?? defaultNodeIcon(folder, 16)}
-                </IconFrame>
-                <span className="rfm-item-name">{folder.name}</span>
-                <span
-                  role="button"
-                  tabIndex={0}
-                  className="rfm-pin-toggle"
-                  aria-label={isFavorite ? labels.unpin : labels.pin}
-                  onClick={(event) => toggleFavorite(event, folder.id)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      toggleFavorite(event as unknown as MouseEvent, folder.id);
-                    }
-                  }}
-                >
-                  {isFavorite ? (
-                    <StarSolidIcon className="rfm-star" size={14} />
-                  ) : (
-                    <StarIcon size={14} />
-                  )}
-                </span>
-              </button>
-            );
-          })}
+          <div className="rfm-sidebar-tree-actions">
+            <button
+              type="button"
+              className="rfm-tree-expand-toggle"
+              aria-label={treeToggleLabel}
+              title={treeToggleLabel}
+              onClick={hasExpandedFolders ? collapseAll : expandAll}
+            >
+              {hasExpandedFolders ? <CollapseIcon size={16} /> : <ExpandIcon size={16} />}
+            </button>
+          </div>
         </div>
-      )}
-
+        {storageKey && pinnedFolders.length > 0 && (
+          <div className="rfm-pins-list">
+            {pinnedFolders.map((folder) => {
+              const isFavorite = favoriteIds.includes(folder.id);
+              const isCurrent = viewFolderId === folder.id;
+              const isDrop = dropTargetId === folder.id;
+              return (
+                <button
+                  key={`pin-${folder.id}`}
+                  type="button"
+                  className="rfm-pin-row"
+                  aria-current={isCurrent || undefined}
+                  data-drop-id={folder.id}
+                  data-drop-target={isDrop || undefined}
+                  onClick={() => openFolder(folder.id)}
+                  {...folderDropHandlers(folder.id)}
+                >
+                  <IconFrame size={16}>{renderIcon?.(folder, 16) ?? defaultNodeIcon(folder, 16)}</IconFrame>
+                  <span className="rfm-item-name">{folder.name}</span>
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    className="rfm-pin-toggle"
+                    aria-label={isFavorite ? labels.unpin : labels.pin}
+                    onClick={(event) => toggleFavorite(event, folder.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        toggleFavorite(event as unknown as MouseEvent, folder.id);
+                      }
+                    }}
+                  >
+                    {isFavorite ? <StarSolidIcon className="rfm-star" size={14} /> : <StarIcon size={14} />}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
       <div className="rfm-sidebar-scroll">
         <button
           type="button"

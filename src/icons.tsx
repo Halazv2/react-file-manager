@@ -78,6 +78,15 @@ export function CollapseIcon(props: IconProps) {
   );
 }
 
+export function ExpandIcon(props: IconProps) {
+  return (
+    <svg {...iconProps(props)}>
+      <path d='M8 4H4v4M16 4h4v4M8 20H4v-4M16 20h4v-4' />
+      <path d='m10 10-4-4m0 0v4m0-4h4M14 14l4 4m0 0v-4m0 4h-4' />
+    </svg>
+  );
+}
+
 export function SearchIcon(props: IconProps) {
   return (
     <svg {...iconProps(props)}>

@@ -399,14 +399,18 @@
   white-space: nowrap;
 }
 
-.rfm-item-name-cards {
+.rfm-item[data-view="cards"] .rfm-item-name {
+  width: 100%;
+  text-align: center;
+  white-space: normal;
+}
+
+.rfm-item[data-view="cards"] .rfm-item-label {
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  white-space: normal;
-  text-align: center;
-  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .rfm-item-meta,
@@ -1021,32 +1025,43 @@
   outline: 2px dashed var(--rfm-accent);
 }
 
-.rfm-collapse-all {
+.rfm-sidebar-tree-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.rfm-tree-expand-toggle {
   display: inline-flex;
   cursor: pointer;
   align-items: center;
-  gap: 4px;
-  padding: 4px 6px;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-inline-end: 2px;
+  padding: 0;
   border: 0;
   border-radius: var(--rfm-radius-sm);
   background: transparent;
   color: var(--rfm-text-muted);
-  font: inherit;
-  font-size: var(--rfm-font-size-sm);
-  font-weight: 600;
 }
 
-.rfm-collapse-all:hover {
+.rfm-tree-expand-toggle:hover {
   background: var(--rfm-surface-hover);
   color: var(--rfm-text);
 }
 
+.rfm-pins-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .rfm-pins-label {
-  padding: 0 6px 4px;
   color: var(--rfm-text-muted);
   font-size: var(--rfm-font-size-sm);
   font-weight: 600;
   letter-spacing: 0.04em;
+  width: 100%;
   text-transform: uppercase;
 }
 

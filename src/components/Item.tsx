@@ -80,7 +80,7 @@ export const Item = memo(function Item({ item, index }: { item: FileManagerItem;
           <IconFrame size={view === "cards" ? 28 : 16}>
             {renderIcon?.(item, view === "cards" ? 28 : 16) ?? defaultNodeIcon(item, view === "cards" ? 28 : 16)}
           </IconFrame>
-          <span className="rfm-item-name">
+          <span className="rfm-item-name" title={!isEditing ? item.name : undefined}>
             {isEditing ? (
               <input
                 ref={inputRef}

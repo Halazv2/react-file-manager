@@ -13,6 +13,7 @@ export interface FileManagerLabels {
   addNew: string;
   uploadDocument: string;
   collapseAll: string;
+  expandAll: string;
   pinnedRecent: string;
   pin: string;
   unpin: string;
@@ -65,6 +66,7 @@ export const DEFAULT_LABELS: FileManagerLabels = {
   addNew: "Add New",
   uploadDocument: "Upload Document",
   collapseAll: "Collapse all",
+  expandAll: "Expand all",
   pinnedRecent: "Pinned & recent",
   pin: "Pin",
   unpin: "Unpin",
