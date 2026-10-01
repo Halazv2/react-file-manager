@@ -79,6 +79,107 @@ export interface FileManagerComponents {
   DetailsPane?: ComponentType;
 }
 
+/** Node as it was before the action. `parentId` is `null` at the root. */
+export interface FileManagerActionItem {
+  id: string;
+  name: string;
+  kind: FileManagerKind;
+  parentId: string | null;
+}
+
+/** Folder an action targeted. `id` is `null` at the root. */
+export interface FileManagerActionDestination {
+  id: string | null;
+  name: string;
+}
+
+export type FileManagerActionUndo = () => void | Promise<void>;
+
+export interface FileManagerMoveAction {
+  type: "move";
+  item: FileManagerActionItem;
+  items: FileManagerActionItem[];
+  destination: FileManagerActionDestination;
+  /** Set when every item started in the same folder. */
+  previous?: { parentId: string | null };
+  current: { parentId: string | null };
+  undo?: FileManagerActionUndo;
+}
+
+export interface FileManagerCopyAction {
+  type: "copy" | "duplicate";
+  item: FileManagerActionItem;
+  items: FileManagerActionItem[];
+  destination: FileManagerActionDestination;
+  previous?: { parentId: string | null };
+  current: { parentId: string | null };
+  undo?: FileManagerActionUndo;
+}
+
+export interface FileManagerRenameAction {
+  type: "rename";
+  item: FileManagerActionItem;
+  previous: { name: string };
+  current: { name: string };
+  undo?: FileManagerActionUndo;
+}
+
+export interface FileManagerDeleteAction {
+  type: "delete";
+  item: FileManagerActionItem;
+  items: FileManagerActionItem[];
+  undo?: FileManagerActionUndo;
+}
+
+export interface FileManagerRestoreAction {
+  type: "restore";
+  item: FileManagerActionItem;
+  items: FileManagerActionItem[];
+  destination?: FileManagerActionDestination;
+  undo?: FileManagerActionUndo;
+}
+
+export interface FileManagerCreateAction {
+  type: "create";
+  kind: FileManagerKind;
+  /** Parent folder the item was created in. */
+  destination: FileManagerActionDestination;
+  undo?: FileManagerActionUndo;
+}
+
+export interface FileManagerUploadAction {
+  type: "upload";
+  count: number;
+  names: string[];
+  destination: FileManagerActionDestination;
+  undo?: FileManagerActionUndo;
+}
+
+export interface FileManagerImportAction {
+  type: "import";
+  count: number;
+  items: Array<{ name: string; kind: FileManagerKind }>;
+  destination: FileManagerActionDestination;
+  undo?: FileManagerActionUndo;
+}
+
+/**
+ * Structured result of a successful file or folder mutation.
+ * Built-in flows emit `move`, `rename`, `delete`, `create`, `upload`, and `import`.
+ * `copy`, `duplicate`, and `restore` stay in the union so those payloads stay typed.
+ */
+export type FileManagerActionEvent =
+  | FileManagerMoveAction
+  | FileManagerCopyAction
+  | FileManagerRenameAction
+  | FileManagerDeleteAction
+  | FileManagerRestoreAction
+  | FileManagerCreateAction
+  | FileManagerUploadAction
+  | FileManagerImportAction;
+
+export type FileManagerActionType = FileManagerActionEvent["type"];
+
 export interface FileManagerProps {
   nodes: FileManagerNode[];
   folderId?: string | null;
@@ -113,21 +214,12 @@ export interface FileManagerProps {
   enablePreview?: boolean;
   pdfWorkerSrc?: string;
   previewFetchInit?: RequestInit;
-  onMove?: (
-    ids: string[],
-    targetFolderId: string | null
-  ) => void | Promise<void>;
+  onMove?: (ids: string[], targetFolderId: string | null) => void | Promise<void>;
   onOpenFile?: (id: string) => void;
   onOpenFolder?: (id: string | null) => void;
-  onUpload?: (
-    files: File[],
-    folderId: string | null
-  ) => void | Promise<void>;
+  onUpload?: (files: File[], folderId: string | null) => void | Promise<void>;
   /** OS folder/file drops. Folders keep their tree; files are `{ kind: "file", file }`. */
-  onImport?: (
-    items: FileManagerDropItem[],
-    folderId: string | null
-  ) => void | Promise<void>;
+  onImport?: (items: FileManagerDropItem[], folderId: string | null) => void | Promise<void>;
   onCreateFolder?: (parentId: string | null) => void;
   onCreateFile?: (folderId: string | null) => void;
   onDelete?: (ids: string[]) => void;
@@ -145,6 +237,11 @@ export interface FileManagerProps {
   renderPreview?: (node: FileManagerItem | null) => ReactNode;
   renderActions?: (node: FileManagerNode) => ReactNode;
   onError?: (error: unknown, context: { operation: string }) => void;
+  /**
+   * Fired after a file or folder mutation succeeds.
+   * A thrown host callback skips the event. Hosts that omit this prop are unchanged.
+   */
+  onAction?: (event: FileManagerActionEvent) => void | Promise<void>;
   labels?: Partial<FileManagerLabels>;
   components?: FileManagerComponents;
   /** When true (default), the sidebar tree lists files under folders. */

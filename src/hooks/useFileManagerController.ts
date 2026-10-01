@@ -26,12 +26,21 @@ import {
   toggleFavoriteFolderId,
 } from "../adapters/pins";
 import { buildFilePreview } from "../adapters/preview";
+import {
+  buildCreateAction,
+  buildDeleteAction,
+  buildImportAction,
+  buildMoveAction,
+  buildRenameAction,
+  buildUploadAction,
+} from "../core/actionEvent";
 import { idsInRange } from "../core/selection";
 import { folderHasChildFolders, getExtension, getNodeById, listFolder, searchNodes } from "../core/tree";
 import { breadcrumbsFromIndex, buildTreeIndex, folderContainsIdInIndex, getIndexedNode } from "../core/treeIndex";
 import type {
   DropTargetId,
   FileManagerAction,
+  FileManagerActionEvent,
   FileManagerItem,
   FileManagerProps,
   FileManagerView,
@@ -89,6 +98,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     renderPreview,
     renderActions,
     onError,
+    onAction,
     showFilesInTree = true,
     treeRevealOnFileSelect = true,
   } = props;
@@ -156,6 +166,12 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
   const [editingId, setEditingId] = useState<string | null>(null);
   const labelsRef = useRef(labels);
   labelsRef.current = labels;
+  const onActionRef = useRef(onAction);
+  onActionRef.current = onAction;
+  const onMoveRef = useRef(onMove);
+  onMoveRef.current = onMove;
+  const onRenameRef = useRef(onRename);
+  onRenameRef.current = onRename;
 
   selectedIdsRef.current = selectedIds;
   dndRef.current = dnd;
@@ -358,13 +374,26 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
   }, [announce, deferredSearch, labels]);
 
   const runHostOperation = useCallback(
-    async (operation: string, task?: () => void | Promise<void>, successMessage?: string): Promise<boolean> => {
+    async (
+      operation: string,
+      task?: () => void | Promise<void>,
+      successMessage?: string,
+      describe?: () => FileManagerActionEvent | null
+    ): Promise<boolean> => {
       if (!task) return true;
+      // Snapshot before the host callback so in-place edits cannot erase previous values.
+      let event: FileManagerActionEvent | null = null;
+      if (onActionRef.current && describe) {
+        try {
+          event = describe();
+        } catch (error) {
+          onError?.(error, { operation: "onAction" });
+        }
+      }
       setPendingOperation(operation);
       try {
         await task();
         if (successMessage) announce(successMessage);
-        return true;
       } catch (error) {
         onError?.(error, { operation });
         announce(labelsRef.current.operationFailed(operation));
@@ -372,6 +401,21 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
       } finally {
         setPendingOperation(null);
       }
+
+      const notify = onActionRef.current;
+      if (notify && event) {
+        try {
+          const result = notify(event);
+          if (result && typeof (result as Promise<unknown>).then === "function") {
+            void Promise.resolve(result).catch((error: unknown) => {
+              onError?.(error, { operation: "onAction" });
+            });
+          }
+        } catch (error) {
+          onError?.(error, { operation: "onAction" });
+        }
+      }
+      return true;
     },
     [announce, onError]
   );
@@ -381,24 +425,61 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
       void runHostOperation(
         "upload",
         onUpload ? () => onUpload(files, folderId) : undefined,
-        labels.uploaded(files.length)
+        labels.uploaded(files.length),
+        () =>
+          buildUploadAction(
+            treeIndex,
+            files.map((file) => file.name),
+            folderId,
+            rootLabel
+          )
       );
     },
-    [labels, onUpload, runHostOperation]
+    [labels, onUpload, rootLabel, runHostOperation, treeIndex]
   );
 
   const handleDelete = useCallback(
     (ids: string[]) => {
-      void runHostOperation("delete", onDelete ? () => onDelete(ids) : undefined, labels.deleted(ids.length));
+      void runHostOperation("delete", onDelete ? () => onDelete(ids) : undefined, labels.deleted(ids.length), () =>
+        buildDeleteAction(treeIndex, ids)
+      );
     },
-    [labels, onDelete, runHostOperation]
+    [labels, onDelete, runHostOperation, treeIndex]
   );
 
   const handleRename = useCallback(
     (id: string, name: string) => {
-      void runHostOperation("rename", onRename ? () => onRename(id, name) : undefined, labels.renamed(name));
+      void runHostOperation("rename", onRename ? () => onRename(id, name) : undefined, labels.renamed(name), () =>
+        buildRenameAction(treeIndex, id, name, onRenameRef.current)
+      );
     },
-    [labels, onRename, runHostOperation]
+    [labels, onRename, runHostOperation, treeIndex]
+  );
+
+  const handleCreateFolder = useCallback(
+    (parentId: string | null) => {
+      if (!onCreateFolder) return;
+      void runHostOperation(
+        "create",
+        () => onCreateFolder(parentId),
+        undefined,
+        () => buildCreateAction(treeIndex, "folder", parentId, rootLabel)
+      );
+    },
+    [onCreateFolder, rootLabel, runHostOperation, treeIndex]
+  );
+
+  const handleCreateFile = useCallback(
+    (parentId: string | null) => {
+      if (!onCreateFile) return;
+      void runHostOperation(
+        "create",
+        () => onCreateFile(parentId),
+        undefined,
+        () => buildCreateAction(treeIndex, "file", parentId, rootLabel)
+      );
+    },
+    [onCreateFile, rootLabel, runHostOperation, treeIndex]
   );
 
   const startRename = useCallback((id: string) => {
@@ -535,7 +616,8 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
       const ok = await runHostOperation(
         "move",
         onMove ? () => onMove(ids, targetFolderId) : undefined,
-        labels.moved(ids.length)
+        labels.moved(ids.length),
+        () => buildMoveAction(treeIndex, ids, targetFolderId, rootLabel, onMoveRef.current)
       );
       if (!ok) {
         rollbackSpring();
@@ -547,7 +629,18 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
       setPreview(null);
       dispatchDnd({ type: "RESET" });
     },
-    [canManage, clearHoverTimers, labels, onMove, runHostOperation, setFolderId, setSelectedIds, storageKey]
+    [
+      canManage,
+      clearHoverTimers,
+      labels,
+      onMove,
+      rootLabel,
+      runHostOperation,
+      setFolderId,
+      setSelectedIds,
+      storageKey,
+      treeIndex,
+    ]
   );
 
   const onDropOnFolder = useCallback(
@@ -585,13 +678,27 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
           ok = await runHostOperation(
             "import",
             () => onImport?.(plan.items, targetFolderId),
-            labels.imported(plan.items.length)
+            labels.imported(plan.items.length),
+            () =>
+              buildImportAction(
+                treeIndex,
+                plan.items.map((item) => ({ name: item.name, kind: item.kind })),
+                targetFolderId,
+                rootLabel
+              )
           );
         } else if (plan.action === "upload") {
           ok = await runHostOperation(
             "upload",
             () => onUpload?.(plan.files, targetFolderId),
-            labels.uploaded(plan.files.length)
+            labels.uploaded(plan.files.length),
+            () =>
+              buildUploadAction(
+                treeIndex,
+                plan.files.map((file) => file.name),
+                targetFolderId,
+                rootLabel
+              )
           );
         }
         if (ok) {
@@ -610,9 +717,11 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
       labels,
       onImport,
       onUpload,
+      rootLabel,
       runHostOperation,
       setFolderId,
       storageKey,
+      treeIndex,
     ]
   );
 
@@ -1153,8 +1262,8 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     renderActions,
     getDetailRows,
     renderDetailActions,
-    onCreateFolder,
-    onCreateFile,
+    onCreateFolder: onCreateFolder ? handleCreateFolder : undefined,
+    onCreateFile: onCreateFile ? handleCreateFile : undefined,
     onUpload: handleUpload,
     onOpenFile,
     onDownloadFile: handleDownloadFile,

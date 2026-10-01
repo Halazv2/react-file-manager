@@ -19,23 +19,53 @@ export { folderDropTargetHandlers } from "./adapters/dropTarget";
 export { defaultNodeIcon, FileTypeIcon, FolderTypeIcon } from "./fileIcons";
 export type { FileTypeIconProps, FolderTypeIconProps } from "./fileIcons";
 export { buildFilePreview, isImageExtension, isPdfExtension, isTextExtension } from "./adapters/preview";
-export { getFavoriteFolderIds, getRecentFolderIds, MAX_RECENT_FOLDERS, pushRecentFolderId, toggleFavoriteFolderId } from "./adapters/pins";
+export {
+  getFavoriteFolderIds,
+  getRecentFolderIds,
+  MAX_RECENT_FOLDERS,
+  pushRecentFolderId,
+  toggleFavoriteFolderId,
+} from "./adapters/pins";
 export { DEFAULT_LABELS, resolveLabels } from "./labels";
 export type { FileManagerLabels } from "./labels";
-export { folderContainsId, folderHasChildFolders, folderHasChildren, getBreadcrumbs, getExtension, getFolderContents, getNodeById, listFolder, moveNodes, searchNodes } from "./core/tree";
+export {
+  folderContainsId,
+  folderHasChildFolders,
+  folderHasChildren,
+  getBreadcrumbs,
+  getExtension,
+  getFolderContents,
+  getNodeById,
+  listFolder,
+  moveNodes,
+  searchNodes,
+} from "./core/tree";
 export type {
   DropTargetId,
   FileManagerAction,
+  FileManagerActionDestination,
+  FileManagerActionEvent,
+  FileManagerActionItem,
+  FileManagerActionType,
+  FileManagerActionUndo,
   FileManagerClassNames,
+  FileManagerCopyAction,
+  FileManagerCreateAction,
+  FileManagerDeleteAction,
   FileManagerDetailRow,
   FileManagerComponents,
   FileManagerDropItem,
+  FileManagerImportAction,
   FileManagerItem,
   FileManagerKind,
+  FileManagerMoveAction,
   FileManagerNode,
   FileManagerProps,
+  FileManagerRenameAction,
+  FileManagerRestoreAction,
   FileManagerSortBy,
   FileManagerTheme,
+  FileManagerUploadAction,
   FileManagerView,
   FilePreviewResult,
   PreviewKind,

@@ -5,7 +5,7 @@
 ### Added
 
 - Sidebar tree lists files (not only folders). Files are draggable; folders remain drop targets.
-- `showFilesInTree` (default `true`) and `treeRevealOnFileSelect` (default `true`) — selecting a tree file opens its parent folder and selects the file.
+- `showFilesInTree` (default `true`) and `treeRevealOnFileSelect` (default `true`), selecting a tree file opens its parent folder and selects the file.
 - `folderHasChildren` helper export.
 
 ### Fixed

@@ -4,13 +4,13 @@
 [![license](https://img.shields.io/npm/l/%40halazv2%2Freact-file-manager.svg)](./LICENSE)
 [![demo](https://img.shields.io/badge/demo-live-blue.svg)](https://halazv2.github.io/react-file-manager/)
 
-Headless-ish React file browser with **Finder-style spring-loaded folders**, drag-and-drop, built-in icons, pins/recents, in-pane preview, and host-driven action menus. Bring your own data and API — keep viewers (Foxit, OnlyOffice) and domain actions in the host.
+Headless-ish React file browser with **Finder-style spring-loaded folders**, drag-and-drop, built-in icons, pins/recents, in-pane preview, and host-driven action menus. Bring your own data and API keep viewers (Foxit, OnlyOffice) and domain actions in the host.
 
 **Live demo:** https://halazv2.github.io/react-file-manager/
 
 ![Spring-loaded folders demo](./docs/spring-load.gif)
 
-Hover a folder while dragging — it expands in the sidebar and opens in the browser after a short delay, just like macOS Finder.
+Hover a folder while dragging it expands in the sidebar and opens in the browser after a short delay, just like macOS Finder.
 
 ## Install
 
@@ -24,9 +24,9 @@ Peer dependencies: `react` and `react-dom` ≥ 18. Optional peer: `pdfjs-dist` �
 
 Anything else (utility classes, extra BEM modifiers) is internal.
 
-1. **CSS variables** on `.rfm-root` — theming  
-2. **`aria-*` / `data-*`** — state (`aria-selected`, `aria-pressed`, `aria-expanded`, `aria-busy`, `data-theme`, `data-focused`, `data-drop-target`, `data-view`, `data-kind`)  
-3. **`classNames` slots + root `className` / `style`** — escape hatch  
+1. **CSS variables** on `.rfm-root` theming  
+2. **`aria-*` / `data-*`** state (`aria-selected`, `aria-pressed`, `aria-expanded`, `aria-busy`, `data-theme`, `data-focused`, `data-drop-target`, `data-view`, `data-kind`)  
+3. **`classNames` slots + root `className` / `style`** escape hatch  
 
 Import the published stylesheet (also pulled in by `<FileManager />`):
 
@@ -114,7 +114,7 @@ The component fills its parent. Give the parent a height.
 - Rename, download file/folder, create file hooks
 - Theme tokens (`--rfm-accent`, `--rfm-selected`, surfaces)
 
-Host apps own document viewers, merge/split, RBAC, and domain modals — wire them through callbacks and action getters.
+Host apps own document viewers, merge/split, RBAC, and domain modals wire them through callbacks and action getters.
 
 ## Adapter example (reflow-style)
 
@@ -279,10 +279,10 @@ Shipped in **0.3.0**: icons, theming tokens, pins/recents, preview pipeline, act
 
 Still optional follow-ups:
 
-- **Upload widgets** — richer dropzones and progress UI
-- **Theming presets** — ready-made light/brand skins beyond CSS variables
-- **Mobile redesign** — touch-first layout and gestures
-- **iAfford adapter** — swap hard-coded LibraryFileManager for this package (after reflow validation)
+- **Upload widgets** richer dropzones and progress UI
+- **Theming presets** ready-made light/brand skins beyond CSS variables
+- **Mobile redesign** touch-first layout and gestures
+- **iAfford adapter** swap hard-coded LibraryFileManager for this package (after reflow validation)
 
 ## Local demo
 
