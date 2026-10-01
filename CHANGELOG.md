@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.4
+
+### Added
+
+- `onAction` fires after a successful move, rename, delete, create, upload, or import. The event includes an `undo` callback when the change can be reversed.
+
 ## 0.4.1
 
 ### Added
