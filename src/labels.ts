@@ -80,7 +80,7 @@ export const DEFAULT_LABELS: FileManagerLabels = {
   delete: "Delete",
   view: "View",
   detailsEmpty: "Select a file or folder to view details",
-  keyboardHint: "↑↓ navigate · Shift range · ⌘/Ctrl toggle · Enter open · Esc clear",
+  keyboardHint: "↑↓ navigate · Shift range · ⌘/Ctrl toggle/select all · Enter open · Esc clear",
   loadingPreview: "Loading preview…",
   firstPagePreview: "First page preview",
   type: "Type",

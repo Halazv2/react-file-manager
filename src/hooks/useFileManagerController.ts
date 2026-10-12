@@ -1135,6 +1135,18 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
 
       const list = springFolderId !== undefined ? viewItems : items;
 
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a") {
+        event.preventDefault();
+        const nextFocusedIndex = list.length === 0 ? -1 : Math.min(Math.max(focusedIndex, 0), list.length - 1);
+        const focused = list[nextFocusedIndex] ?? null;
+        setFocusedIndex(nextFocusedIndex);
+        selectionAnchorIndex.current = nextFocusedIndex;
+        setSelectedIds(list.map((item) => item.id));
+        setSelectedNode(focused);
+        setPreview(null);
+        return;
+      }
+
       if (!list.length) {
         if (event.key === "Escape" && searchQuery) clearSearch();
         return;

@@ -134,6 +134,41 @@ describe("FileManager characterization", () => {
     expect(selected("README.md")).toBe("true");
   });
 
+  it("Ctrl+A selects all items in the current library listing", () => {
+    const onSelectionChange = vi.fn();
+    renderManager({ onSelectionChange });
+
+    const manager = screen.getByLabelText("File manager");
+    manager.focus();
+    fireEvent.keyDown(manager, { key: "a", ctrlKey: true });
+
+    expect(selected("Documents")).toBe("true");
+    expect(selected("Photos")).toBe("true");
+    expect(selected("README.md")).toBe("true");
+    expect(onSelectionChange).toHaveBeenLastCalledWith(["docs", "photos", "readme"]);
+  });
+
+  it("Cmd+A selects only the items in the open folder", async () => {
+    const user = userEvent.setup();
+    const onSelectionChange = vi.fn();
+    renderManager({ onSelectionChange });
+
+    const manager = screen.getByLabelText("File manager");
+    manager.focus();
+    await user.keyboard("{ArrowDown}{Enter}");
+    fireEvent.keyDown(manager, { key: "a", metaKey: true });
+
+    expect(within(folderContents()).getByRole("option", { name: "Nested" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    );
+    expect(within(folderContents()).getByRole("option", { name: "notes.txt" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    );
+    expect(onSelectionChange).toHaveBeenLastCalledWith(["nested", "notes"]);
+  });
+
   it("arrow keys move focus and selection", async () => {
     const user = userEvent.setup();
     const onSelectionChange = vi.fn();
