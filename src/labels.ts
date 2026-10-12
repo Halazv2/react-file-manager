@@ -35,6 +35,19 @@ export interface FileManagerLabels {
   file: string;
   items: string;
   size: string;
+  name: string;
+  kind: string;
+  dateModified: string;
+  dateAdded: string;
+  unavailable: string;
+  sortBy: string;
+  sortDirection: string;
+  ascending: string;
+  descending: string;
+  customSort: string;
+  clearSort: string;
+  resizeColumn: (name: string) => string;
+  sortedBy: (name: string, direction: string) => string;
   pages: string;
   pinned: string;
   renameInput: string;
@@ -88,6 +101,19 @@ export const DEFAULT_LABELS: FileManagerLabels = {
   file: "file",
   items: "Items",
   size: "Size",
+  name: "Name",
+  kind: "Kind",
+  dateModified: "Date Modified",
+  dateAdded: "Date Added",
+  unavailable: "—",
+  sortBy: "Sort by",
+  sortDirection: "Sort direction",
+  ascending: "Ascending",
+  descending: "Descending",
+  customSort: "Custom sort",
+  clearSort: "Clear sort",
+  resizeColumn: (name) => `Resize ${name} column`,
+  sortedBy: (name, direction) => `Sorted by ${name}, ${direction.toLowerCase()}`,
   pages: "Pages",
   pinned: "Pinned",
   renameInput: "Rename item",

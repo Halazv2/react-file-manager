@@ -18,10 +18,18 @@ export interface FileManagerNode {
   children?: FileManagerNode[];
   extension?: string;
   size?: number;
+  /** ISO 8601 string or Unix timestamp in milliseconds. */
+  modifiedAt?: string | number;
+  /** ISO 8601 string or Unix timestamp in milliseconds. */
+  addedAt?: string | number;
   meta?: Record<string, unknown>;
 }
 
-export type FileManagerSortBy = "name" | "size" | "kind";
+export type FileManagerSortBy = "name" | "size" | "kind" | "modifiedAt" | "addedAt";
+
+export type FileManagerColumn = FileManagerSortBy;
+
+export type FileManagerColumnWidths = Partial<Record<FileManagerColumn, number>>;
 
 export type FileManagerItem = FileManagerNode & {
   path?: string;
@@ -203,9 +211,23 @@ export interface FileManagerProps {
   showDetails?: boolean;
   springLoadDelay?: number;
   isBusy?: boolean;
-  sortBy?: FileManagerSortBy;
+  /** Omit for uncontrolled sorting; null explicitly disables sorting. */
+  sortBy?: FileManagerSortBy | null;
+  /** Unset by default, preserving the host's item order. */
+  defaultSortBy?: FileManagerSortBy | null;
+  onSortByChange?: (sortBy: FileManagerSortBy | null) => void;
   sortDirection?: "asc" | "desc";
+  defaultSortDirection?: "asc" | "desc";
+  onSortDirectionChange?: (direction: "asc" | "desc") => void;
   sortComparator?: (a: FileManagerNode, b: FileManagerNode) => number;
+  /** Ordered visible list columns. Name is always shown first. */
+  visibleColumns?: FileManagerColumn[];
+  defaultVisibleColumns?: FileManagerColumn[];
+  onVisibleColumnsChange?: (columns: FileManagerColumn[]) => void;
+  /** Column widths in CSS pixels, bounded to the built-in column limits. */
+  columnWidths?: FileManagerColumnWidths;
+  defaultColumnWidths?: FileManagerColumnWidths;
+  onColumnWidthsChange?: (widths: FileManagerColumnWidths) => void;
   /** localStorage key prefix for pins/recents. */
   storageKey?: string;
   favoriteIds?: string[];

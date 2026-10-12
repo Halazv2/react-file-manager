@@ -6,8 +6,8 @@ import { defaultNodeIcon, IconFrame } from "../fileIcons";
 import { StarSolidIcon } from "../icons";
 import { useFileManagerContext } from "../context";
 import { cn } from "../styles";
-import { compareFolderEntries, folderHasChildren, getExtension } from "../core/tree";
-import { formatBytes } from "../formatBytes";
+import { compareFolderEntries, folderHasChildren } from "../core/tree";
+import { columnLabel, columnValue } from "../core/columns";
 import type { FileManagerItem, FileManagerNode } from "../types";
 
 export const Item = memo(function Item({ item, index }: { item: FileManagerItem; index: number }) {
@@ -32,6 +32,7 @@ export const Item = memo(function Item({ item, index }: { item: FileManagerItem;
     editingId,
     commitRename,
     cancelRename,
+    visibleColumns,
   } = useFileManagerContext();
 
   const isSelected = selectedIds.includes(item.id);
@@ -39,8 +40,6 @@ export const Item = memo(function Item({ item, index }: { item: FileManagerItem;
   const isFolder = item.kind === "folder";
   const isDropTarget = dropTargetId === item.id && isFolder;
   const isEditing = editingId === item.id;
-  const childCount = isFolder ? (item.children?.length ?? 0) : null;
-  const extension = getExtension(item);
   const actions = resolveItemActions(item);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -76,46 +75,58 @@ export const Item = memo(function Item({ item, index }: { item: FileManagerItem;
             if (isEditing) return;
             activateItem(item);
           }}
-          onContextMenu={(event) => openContextMenu(item, event)}>
-          <IconFrame size={view === "cards" ? 28 : 16}>
-            {renderIcon?.(item, view === "cards" ? 28 : 16) ?? defaultNodeIcon(item, view === "cards" ? 28 : 16)}
-          </IconFrame>
-          <span className="rfm-item-name" title={!isEditing ? item.name : undefined}>
-            {isEditing ? (
-              <input
-                ref={inputRef}
-                className="rfm-rename-input"
-                aria-label={labels.renameInput}
-                defaultValue={item.name}
-                data-editing=""
-                onClick={(event) => event.stopPropagation()}
-                onKeyDown={(event) => {
-                  event.stopPropagation();
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    commitRename(item.id, event.currentTarget.value);
-                  }
-                  if (event.key === "Escape") {
-                    event.preventDefault();
-                    cancelRename();
-                  }
-                }}
-                onBlur={(event) => commitRename(item.id, event.currentTarget.value)}
-              />
-            ) : (
-              <>
-                <span className="rfm-item-label" data-view={view}>
-                  {item.name}
-                </span>
-                {item.path && <span className="rfm-item-path">{item.path}</span>}
-              </>
-            )}
-          </span>
-          {view === "list" && !isEditing && (
-            <span className="rfm-item-meta">
-              {isFolder ? labels.itemsCount(childCount ?? 0) : formatBytes(item.size) || (extension || labels.file).toUpperCase()}
+          onContextMenu={(event) => openContextMenu(item, event)}
+        >
+          <span className="rfm-item-primary">
+            <IconFrame size={view === "cards" ? 28 : 16}>
+              {renderIcon?.(item, view === "cards" ? 28 : 16) ?? defaultNodeIcon(item, view === "cards" ? 28 : 16)}
+            </IconFrame>
+            <span className="rfm-item-name" title={!isEditing ? item.name : undefined}>
+              {isEditing ? (
+                <input
+                  ref={inputRef}
+                  className="rfm-rename-input"
+                  aria-label={labels.renameInput}
+                  defaultValue={item.name}
+                  data-editing=""
+                  onClick={(event) => event.stopPropagation()}
+                  onKeyDown={(event) => {
+                    event.stopPropagation();
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      commitRename(item.id, event.currentTarget.value);
+                    }
+                    if (event.key === "Escape") {
+                      event.preventDefault();
+                      cancelRename();
+                    }
+                  }}
+                  onBlur={(event) => commitRename(item.id, event.currentTarget.value)}
+                />
+              ) : (
+                <>
+                  <span className="rfm-item-label" data-view={view}>
+                    {item.name}
+                  </span>
+                  {item.path && <span className="rfm-item-path">{item.path}</span>}
+                </>
+              )}
             </span>
-          )}
+          </span>
+          {view === "list" &&
+            visibleColumns
+              .filter((column) => column !== "name")
+              .map((column) => (
+                <span
+                  key={column}
+                  className="rfm-item-meta rfm-item-cell"
+                  data-column={column}
+                  aria-label={`${columnLabel(column, labels)}: ${columnValue(item, column, labels)}`}
+                  title={columnValue(item, column, labels)}
+                >
+                  {columnValue(item, column, labels)}
+                </span>
+              ))}
           {renderActions ? (
             <span className="rfm-more" data-view={view}>
               {renderActions(item)}
@@ -132,7 +143,9 @@ export const Item = memo(function Item({ item, index }: { item: FileManagerItem;
 });
 
 function sortTreeChildren(children: FileManagerNode[]): FileManagerNode[] {
-  return [...children].sort((a, b) => compareFolderEntries(a, b, "name", "asc"));
+  return [...children].sort((a, b) =>
+    a.kind !== b.kind ? (a.kind === "folder" ? -1 : 1) : compareFolderEntries(a, b, "name", "asc")
+  );
 }
 
 export function FolderTree({ folders, depth = 0 }: { folders: FileManagerItem[]; depth?: number }) {
@@ -196,7 +209,8 @@ export function FolderTree({ folders, depth = 0 }: { folders: FileManagerItem[];
                 if (!isFolder) activateItem(node);
               }}
               onContextMenu={(event) => openContextMenu(node, event)}
-              {...(isFolder ? folderDropHandlers(node.id) : {})}>
+              {...(isFolder ? folderDropHandlers(node.id) : {})}
+            >
               {isFolder ? (
                 <button
                   type="button"
@@ -208,22 +222,33 @@ export function FolderTree({ folders, depth = 0 }: { folders: FileManagerItem[];
                     event.stopPropagation();
                     if (!hasChildren) return;
                     toggleExpanded(event, node.id);
-                  }}>
-                  <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+                  }}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width={14}
+                    height={14}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    aria-hidden
+                  >
                     <path d="m9 6 6 6-6 6" />
                   </svg>
                 </button>
               ) : (
                 <span className="rfm-tree-chevron" aria-hidden style={{ visibility: "hidden" }} />
               )}
-              <IconFrame size={16}>
-                {renderIcon?.(node, 16) ?? defaultNodeIcon(node, 16)}
-              </IconFrame>
+              <IconFrame size={16}>{renderIcon?.(node, 16) ?? defaultNodeIcon(node, 16)}</IconFrame>
               <span className="rfm-item-name" title={node.name}>
                 {node.name}
               </span>
               {isFavorite && <StarSolidIcon className="rfm-star" size={14} />}
-              {renderActions ? <span className="rfm-more">{renderActions(node)}</span> : <MoreMenuButton actions={actions} label={labels.manageItem(node.name)} />}
+              {renderActions ? (
+                <span className="rfm-more">{renderActions(node)}</span>
+              ) : (
+                <MoreMenuButton actions={actions} label={labels.manageItem(node.name)} />
+              )}
             </div>
             {hasChildren && isExpanded && (
               <div>
@@ -240,7 +265,13 @@ export function FolderTree({ folders, depth = 0 }: { folders: FileManagerItem[];
 export function FileManagerContextMenu() {
   const { contextMenu, closeContextMenu, resolveItemActions } = useFileManagerContext();
   if (!contextMenu) return null;
-  return <ContextMenuLayer actions={resolveItemActions(contextMenu.node)} position={{ x: contextMenu.x, y: contextMenu.y }} onClose={closeContextMenu} />;
+  return (
+    <ContextMenuLayer
+      actions={resolveItemActions(contextMenu.node)}
+      position={{ x: contextMenu.x, y: contextMenu.y }}
+      onClose={closeContextMenu}
+    />
+  );
 }
 
 export function FileManagerBulkBar() {

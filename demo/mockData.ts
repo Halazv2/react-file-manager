@@ -5,6 +5,8 @@ export const initialNodes: FileManagerNode[] = [
     id: "documents",
     name: "Documents",
     kind: "folder",
+    addedAt: "2026-04-01T09:00:00Z",
+    modifiedAt: "2026-04-12T14:30:00Z",
     children: [
       {
         id: "contracts",
@@ -37,6 +39,8 @@ export const initialNodes: FileManagerNode[] = [
     id: "photos",
     name: "Photos",
     kind: "folder",
+    addedAt: "2026-03-20T10:00:00Z",
+    modifiedAt: "2026-04-10T16:45:00Z",
     children: [
       {
         id: "vacation",
@@ -54,6 +58,8 @@ export const initialNodes: FileManagerNode[] = [
     id: "projects",
     name: "Projects",
     kind: "folder",
+    addedAt: "2026-02-14T08:00:00Z",
+    modifiedAt: "2026-04-11T11:15:00Z",
     children: [
       {
         id: "react-finder",
@@ -76,5 +82,22 @@ export const initialNodes: FileManagerNode[] = [
       },
     ],
   },
-  { id: "desktop-note", name: "Getting started.txt", kind: "file", extension: "txt", size: 512 },
+  {
+    id: "desktop-note",
+    name: "Getting started.txt",
+    kind: "file",
+    extension: "txt",
+    size: 512,
+    addedAt: "2026-04-01T09:00:00Z",
+    modifiedAt: "2027-07-08T12:00:00Z",
+  },
+  {
+    id: "readme",
+    name: "README.md",
+    kind: "file",
+    extension: "md",
+    size: 1024,
+    addedAt: "2026-04-01T09:00:00Z",
+    modifiedAt: "2027-04-08T12:00:00Z",
+  },
 ];

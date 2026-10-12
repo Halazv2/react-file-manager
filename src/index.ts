@@ -49,6 +49,8 @@ export type {
   FileManagerActionType,
   FileManagerActionUndo,
   FileManagerClassNames,
+  FileManagerColumn,
+  FileManagerColumnWidths,
   FileManagerCopyAction,
   FileManagerCreateAction,
   FileManagerDeleteAction,

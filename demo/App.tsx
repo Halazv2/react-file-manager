@@ -129,6 +129,8 @@ function fileToNode(file: File): FileManagerNode {
     kind: "file",
     extension: file.name.split(".").pop(),
     size: file.size,
+    modifiedAt: file.lastModified,
+    addedAt: Date.now(),
   };
 }
 

@@ -1,24 +1,20 @@
 import { createContext, useContext } from "react";
-import type {
-  DragEvent,
-  KeyboardEvent,
-  MouseEvent,
-  PointerEvent,
-  ReactNode,
-  RefObject
-} from "react";
+import type { DragEvent, KeyboardEvent, MouseEvent, PointerEvent, ReactNode, RefObject } from "react";
 
 import type { FileManagerLabels } from "./labels";
 import type {
   DropTargetId,
   FileManagerAction,
   FileManagerClassNames,
+  FileManagerColumn,
+  FileManagerColumnWidths,
   FileManagerComponents,
   FileManagerDetailRow,
   FileManagerItem,
   FileManagerNode,
+  FileManagerSortBy,
   FileManagerView,
-  FilePreviewResult
+  FilePreviewResult,
 } from "./types";
 
 export interface FileManagerContextValue {
@@ -32,6 +28,15 @@ export interface FileManagerContextValue {
   focusedIndex: number;
   view: FileManagerView;
   searchQuery: string;
+  sortBy: FileManagerSortBy | null;
+  sortDirection: "asc" | "desc";
+  customSort: boolean;
+  setSortBy: (sortBy: FileManagerSortBy | null) => void;
+  setSortDirection: (direction: "asc" | "desc") => void;
+  visibleColumns: FileManagerColumn[];
+  setVisibleColumns: (columns: FileManagerColumn[]) => void;
+  columnWidths: FileManagerColumnWidths;
+  setColumnWidths: (widths: FileManagerColumnWidths) => void;
   canManage: boolean;
   rootLabel: string;
   isBusy: boolean;
@@ -57,10 +62,7 @@ export interface FileManagerContextValue {
   onPointerDragDown: (node: FileManagerItem, event: PointerEvent<HTMLElement>) => void;
   html5Draggable: boolean;
   onInternalDragEnd: () => void;
-  onDropOnFolder: (
-    event: DragEvent,
-    targetFolderId: string | null
-  ) => void | Promise<void>;
+  onDropOnFolder: (event: DragEvent, targetFolderId: string | null) => void | Promise<void>;
   setView: (view: FileManagerView) => void;
   setSearchQuery: (query: string) => void;
   handleKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
@@ -104,9 +106,7 @@ export interface FileManagerContextValue {
   treeRevealOnFileSelect: boolean;
 }
 
-export const FileManagerContext = createContext<FileManagerContextValue | null>(
-  null
-);
+export const FileManagerContext = createContext<FileManagerContextValue | null>(null);
 
 export const FileManagerStateContext = createContext<FileManagerContextValue | null>(null);
 export const FileManagerActionsContext = createContext<FileManagerContextValue | null>(null);
@@ -125,4 +125,3 @@ export function useFileManagerActions(): FileManagerContextValue {
   const actions = useContext(FileManagerActionsContext);
   return actions ?? useFileManagerContext();
 }
-

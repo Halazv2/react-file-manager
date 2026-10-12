@@ -35,14 +35,25 @@ import {
   buildUploadAction,
 } from "../core/actionEvent";
 import { idsInRange } from "../core/selection";
-import { folderHasChildFolders, getExtension, getNodeById, listFolder, searchNodes } from "../core/tree";
+import {
+  compareFolderEntries,
+  folderHasChildFolders,
+  getExtension,
+  getNodeById,
+  listFolder,
+  searchNodes,
+} from "../core/tree";
+import { FILE_MANAGER_COLUMNS } from "../core/columns";
 import { breadcrumbsFromIndex, buildTreeIndex, folderContainsIdInIndex, getIndexedNode } from "../core/treeIndex";
 import type {
   DropTargetId,
   FileManagerAction,
   FileManagerActionEvent,
+  FileManagerColumn,
+  FileManagerColumnWidths,
   FileManagerItem,
   FileManagerProps,
+  FileManagerSortBy,
   FileManagerView,
   FilePreviewResult,
 } from "../types";
@@ -127,6 +138,33 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     props.defaultSearchQuery ?? "",
     props.onSearchChange
   );
+  const [sortBy, setSortBy] = useControllableState<FileManagerSortBy | null>(
+    props.sortBy,
+    props.defaultSortBy ?? null,
+    props.onSortByChange
+  );
+  const [sortDirection, setSortDirection] = useControllableState<"asc" | "desc">(
+    props.sortDirection,
+    props.defaultSortDirection ?? "asc",
+    props.onSortDirectionChange
+  );
+  const [configuredColumns, setVisibleColumns] = useControllableState<FileManagerColumn[]>(
+    props.visibleColumns,
+    props.defaultVisibleColumns ?? FILE_MANAGER_COLUMNS,
+    props.onVisibleColumnsChange
+  );
+  const visibleColumns = useMemo<FileManagerColumn[]>(
+    () => [
+      "name",
+      ...configuredColumns.filter((column, index) => column !== "name" && configuredColumns.indexOf(column) === index),
+    ],
+    [configuredColumns]
+  );
+  const [columnWidths, setColumnWidths] = useControllableState<FileManagerColumnWidths>(
+    props.columnWidths,
+    props.defaultColumnWidths ?? {},
+    props.onColumnWidthsChange
+  );
 
   const deferredSearch = useDeferredValue(searchQuery);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
@@ -180,32 +218,25 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
 
   const items = useMemo(() => {
     if (deferredSearch.trim() && springFolderId === undefined) {
-      return searchNodes(nodes, deferredSearch, rootLabel);
+      const matches = searchNodes(nodes, deferredSearch, rootLabel);
+      if (!props.sortComparator && sortBy === null) return matches;
+      return matches.sort(props.sortComparator ?? ((a, b) => compareFolderEntries(a, b, sortBy, sortDirection)));
     }
     return listFolder(nodes, folderId, {
-      sortBy: props.sortBy,
-      sortDirection: props.sortDirection,
+      sortBy,
+      sortDirection,
       sortComparator: props.sortComparator,
     });
-  }, [
-    deferredSearch,
-    folderId,
-    nodes,
-    props.sortBy,
-    props.sortComparator,
-    props.sortDirection,
-    rootLabel,
-    springFolderId,
-  ]);
+  }, [deferredSearch, folderId, nodes, sortBy, props.sortComparator, sortDirection, rootLabel, springFolderId]);
 
   const viewItems = useMemo(() => {
     if (springFolderId === undefined) return items;
     return listFolder(nodes, springFolderId, {
-      sortBy: props.sortBy,
-      sortDirection: props.sortDirection,
+      sortBy,
+      sortDirection,
       sortComparator: props.sortComparator,
     });
-  }, [items, nodes, props.sortBy, props.sortComparator, props.sortDirection, springFolderId]);
+  }, [items, nodes, sortBy, props.sortComparator, sortDirection, springFolderId]);
 
   const breadcrumbs = useMemo(() => breadcrumbsFromIndex(treeIndex, viewFolderId), [treeIndex, viewFolderId]);
 
@@ -270,7 +301,7 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
   useEffect(() => {
     setFocusedIndex(-1);
     selectionAnchorIndex.current = 0;
-  }, [folderId, deferredSearch, view]);
+  }, [folderId, deferredSearch, view, sortBy, sortDirection, props.sortComparator]);
 
   useEffect(() => {
     return () => {
@@ -951,8 +982,8 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
         onOpenFolder?.(parentId);
 
         const siblings = listFolder(nodes, parentId, {
-          sortBy: props.sortBy,
-          sortDirection: props.sortDirection,
+          sortBy,
+          sortDirection,
           sortComparator: props.sortComparator,
         });
         const index = siblings.findIndex((entry) => entry.id === item.id);
@@ -972,9 +1003,9 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
       nodes,
       onOpenFolder,
       openFolder,
-      props.sortBy,
+      sortBy,
       props.sortComparator,
-      props.sortDirection,
+      sortDirection,
       setFolderId,
       setSelectedIds,
       storageKey,
@@ -1245,6 +1276,15 @@ export function useFileManagerController(props: FileManagerProps): FileManagerCo
     focusedIndex,
     view,
     searchQuery,
+    sortBy,
+    sortDirection,
+    customSort: Boolean(props.sortComparator),
+    setSortBy,
+    setSortDirection,
+    visibleColumns,
+    setVisibleColumns,
+    columnWidths,
+    setColumnWidths,
     canManage,
     rootLabel,
     isBusy: isBusy || pendingOperation !== null,

@@ -102,6 +102,7 @@ The component fills its parent. Give the parent a height.
 ## What it includes
 
 - Three-pane layout: sidebar, browser (list/cards), details
+- Explorer/Finder-style list columns with sorting, prop-driven visibility, and pointer/keyboard resizing
 - Built-in extension-aware file/folder icons with readable, color-coded extension badges
 - Pins and recent folders (`storageKey` → localStorage)
 - Breadcrumbs, multi-select, keyboard navigation
@@ -161,6 +162,15 @@ Every `FileManagerProps` field:
 | `searchQuery` | `string` | Controlled search string. |
 | `defaultSearchQuery` | `string` | Uncontrolled initial search. |
 | `onSearchChange` | `(query: string) => void` | Fired as the search field changes. |
+| `sortBy` / `defaultSortBy` | `FileManagerSortBy \| null` | Controlled / initial sort field: `name`, `size`, `kind`, `modifiedAt`, or `addedAt`. Unset by default (`null`), preserving host order. |
+| `onSortByChange` | `(sortBy: FileManagerSortBy \| null) => void` | Fired from a header or Clear sort. `null` clears sorting. |
+| `sortDirection` / `defaultSortDirection` | `"asc" \| "desc"` | Controlled / initial sort direction. Default `asc`. |
+| `onSortDirectionChange` | `(direction: "asc" \| "desc") => void` | Fired when a header changes direction; selecting a new field or clearing resets to `asc`. |
+| `sortComparator` | `(a: FileManagerNode, b: FileManagerNode) => number` | Overrides built-in sorting. Headers are disabled; remove this prop to clear custom sorting. |
+| `visibleColumns` / `defaultVisibleColumns` | `FileManagerColumn[]` | Controlled / initial list columns. Defaults to all five; Name always appears first. |
+| `onVisibleColumnsChange` | `(columns: FileManagerColumn[]) => void` | For custom host controls using the controller's `setVisibleColumns`; the built-in browser has no visibility menu. |
+| `columnWidths` / `defaultColumnWidths` | `FileManagerColumnWidths` | Controlled / initial widths in CSS pixels. |
+| `onColumnWidthsChange` | `(widths: FileManagerColumnWidths) => void` | Fired when a column is resized. |
 | `onOpenFolder` | `(id: string \| null) => void` | Fired when a folder is opened (sidebar, double-click, Enter). |
 | `rootLabel` | `string` | Label for the implied root. Default `"My files"`. |
 | `className` | `string` | Extra class on `.rfm-root`. |
@@ -205,9 +215,31 @@ type FileManagerNode = {
   children?: FileManagerNode[];
   extension?: string;
   size?: number;
+  modifiedAt?: string | number;
+  addedAt?: string | number;
   meta?: Record<string, unknown>;
 };
 ```
+
+## Columns and sorting
+
+List view shows **Name, Size, Kind, Date Modified, and Date Added**. Sorting is **unset by default**, so the browser preserves the item order supplied by the host. Click a header to cycle through **ascending → descending → unset**. Selecting a different column starts ascending. **Clear sort** in the toolbar restores host order immediately, including in card view or when the sorted column is hidden. The active sorting applies to both list and card views, recursive search results, and spring-loaded folders. Without sorting, search results retain their original tree traversal order.
+
+Configure which columns are shown with `visibleColumns`, or set their initial configuration with `defaultVisibleColumns`. Updating `visibleColumns` adds or removes headers and their corresponding row cells; the built-in browser has no column visibility menu. Name is always shown first and cannot be hidden. Drag a header divider to resize, or focus it and use Left/Right (10px steps), Home (minimum), or End (maximum). Widths range from 80px to 600px, with a 180px minimum for Name; hosts can also configure them through `columnWidths` or `defaultColumnWidths`. Wide listings scroll horizontally; headers remain visible during vertical scrolling. Column settings survive folder and view changes within the mounted manager.
+
+Name, Size, and date sorting compare files and folders together; folders are not forced to the top. `kind` sorts files by extension (including `node.extension` overrides), with folder/file grouping in the chosen direction. Folder Size cells show child counts, not estimated bytes; Size sorting uses the host's `size` field (missing sizes count as zero). Dates accept ISO 8601 strings or Unix timestamps **in milliseconds**, display in the user's locale/time zone, and show `—` when missing or invalid. Unavailable dates sort after known dates in either direction. Supply real dates from your host data; the library does not generate them. The sidebar tree keeps its independent folders-first name ordering.
+
+```tsx
+<FileManager
+  nodes={nodes}
+  defaultVisibleColumns={["name", "size", "kind", "modifiedAt"]}
+  defaultColumnWidths={{ name: 300, modifiedAt: 180 }}
+  defaultSortBy="modifiedAt"
+  defaultSortDirection="desc"
+/>
+```
+
+For host-managed settings, pass the controlled props together with their `on...Change` callbacks. Use `sortBy={null}` for controlled unsorted state, and handle `null` in `onSortByChange` when the user clears sorting. Omitting `sortBy` enables uncontrolled header sorting, optionally initialized with `defaultSortBy`. Hosts can persist those settings in their own store; `storageKey` continues to affect pins/recents only. Custom row components can read `visibleColumns`, `columnWidths`, and sorting state through the existing context.
 
 ## Icons
 
