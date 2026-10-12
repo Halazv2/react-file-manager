@@ -135,7 +135,7 @@ describe("file library columns and sorting", () => {
     render(<FileManager nodes={nodes} />);
     const handle = screen.getByRole("separator", { name: "Resize Name column" });
     fireEvent.keyDown(handle, { key: "ArrowRight" });
-    expect(handle).toHaveAttribute("aria-valuenow", "250");
+    expect(handle).toHaveAttribute("aria-valuenow", "190");
     fireEvent.keyDown(handle, { key: "Home" });
     expect(handle).toHaveAttribute("aria-valuenow", "180");
     fireEvent.keyDown(handle, { key: "ArrowLeft" });
@@ -161,6 +161,38 @@ describe("file library columns and sorting", () => {
     expect(release).toHaveBeenCalledWith(1);
     expect(handle).toHaveAttribute("aria-valuenow", "230");
     expect(handle.closest(".rfm-list-content")).toHaveStyle("--rfm-list-columns: 230px 90px 120px 165px 165px 28px");
+  });
+
+  it("fills available space with Name unless the host specifies a fixed width", () => {
+    const { rerender } = render(<FileManager nodes={nodes} visibleColumns={["name", "kind"]} />);
+    const content = screen.getByRole("separator", { name: "Resize Name column" }).closest(".rfm-list-content");
+    expect(content).toHaveStyle("--rfm-list-columns: minmax(180px, 1fr) 120px 28px");
+    expect(content).toHaveStyle("min-width: 350px");
+    rerender(<FileManager nodes={nodes} visibleColumns={["name", "kind"]} columnWidths={{ name: 320 }} />);
+    expect(content).toHaveStyle("--rfm-list-columns: 320px 120px 28px");
+    rerender(<FileManager nodes={nodes} visibleColumns={["name", "kind"]} columnWidths={{}} />);
+    expect(content).toHaveStyle("--rfm-list-columns: minmax(180px, 1fr) 120px 28px");
+  });
+
+  it("starts resizing the flexible Name column from its rendered width", () => {
+    render(<FileManager nodes={nodes} visibleColumns={["name"]} />);
+    const handle = screen.getByRole("separator", { name: "Resize Name column" });
+    const header = handle.parentElement;
+    if (!header) throw new Error("Missing Name header");
+    vi.spyOn(header, "getBoundingClientRect").mockReturnValue({
+      width: 420,
+      height: 34,
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 420,
+      bottom: 34,
+      toJSON: () => ({}),
+    });
+    fireEvent.keyDown(handle, { key: "ArrowRight" });
+    expect(handle).toHaveAttribute("aria-valuenow", "430");
+    expect(handle.closest(".rfm-list-content")).toHaveStyle("--rfm-list-columns: 430px 28px");
   });
 
   it("supports controlled sort and width callbacks without overriding host column settings", async () => {

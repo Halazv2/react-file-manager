@@ -224,7 +224,7 @@ export interface FileManagerProps {
   visibleColumns?: FileManagerColumn[];
   defaultVisibleColumns?: FileManagerColumn[];
   onVisibleColumnsChange?: (columns: FileManagerColumn[]) => void;
-  /** Column widths in CSS pixels, bounded to the built-in column limits. */
+  /** Column widths in CSS pixels. Name fills available space unless its width is specified. */
   columnWidths?: FileManagerColumnWidths;
   defaultColumnWidths?: FileManagerColumnWidths;
   onColumnWidthsChange?: (widths: FileManagerColumnWidths) => void;

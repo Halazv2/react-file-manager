@@ -10,7 +10,7 @@ import { CardsIcon, FolderIcon, ListIcon, SearchIcon, UploadIcon } from "../icon
 import { useFileManagerContext } from "../context";
 import { cn } from "../styles";
 import type { FileManagerItem } from "../types";
-import { columnWidth } from "../core/columns";
+import { columnTrack, columnWidth } from "../core/columns";
 
 const LIST_ROW_HEIGHT = 40;
 const CARD_ROW_HEIGHT = 140;
@@ -178,7 +178,7 @@ function ItemGrid({
         style={
           view === "list"
             ? ({
-                "--rfm-list-columns": `${visibleColumns.map((column) => `${columnWidth(column, columnWidths)}px`).join(" ")} 28px`,
+                "--rfm-list-columns": `${visibleColumns.map((column) => columnTrack(column, columnWidths)).join(" ")} 28px`,
                 minWidth: visibleColumns.reduce((total, column) => total + columnWidth(column, columnWidths), 50),
               } as CSSProperties)
             : undefined

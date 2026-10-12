@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.6
+
+### Fixed
+
+- Name column fills available list space by default instead of using a fixed width. Explicit host widths and header resizing still set a fixed width; resizing starts from the rendered column width.
+
 ## 0.4.5
 
 ### Added

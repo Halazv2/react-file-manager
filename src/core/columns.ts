@@ -6,7 +6,7 @@ import { dateTimestamp, getExtension } from "./tree";
 export const FILE_MANAGER_COLUMNS: FileManagerColumn[] = ["name", "size", "kind", "modifiedAt", "addedAt"];
 
 const DEFAULT_WIDTHS: Record<FileManagerColumn, number> = {
-  name: 240,
+  name: 180,
   size: 90,
   kind: 120,
   modifiedAt: 165,
@@ -18,6 +18,16 @@ export function columnMinWidth(column: FileManagerColumn): number {
 }
 
 export const COLUMN_MAX_WIDTH = 600;
+
+export function isFlexibleColumn(column: FileManagerColumn, widths: FileManagerColumnWidths): boolean {
+  return column === "name" && (widths.name === undefined || !Number.isFinite(widths.name));
+}
+
+export function columnTrack(column: FileManagerColumn, widths: FileManagerColumnWidths): string {
+  return isFlexibleColumn(column, widths)
+    ? `minmax(${columnMinWidth(column)}px, 1fr)`
+    : `${columnWidth(column, widths)}px`;
+}
 
 export function columnWidth(column: FileManagerColumn, widths: FileManagerColumnWidths): number {
   const width = widths[column];
