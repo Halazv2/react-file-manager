@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState, type MouseEvent } from "react";
-import { createPortal } from "react-dom";
+import { useRef, useState, type MouseEvent } from "react";
 
 import { FolderTree } from "./Item";
-import { focusFirstMenuItem, onMenuKeyDown } from "./ActionMenu";
+import { FloatingMenu } from "./FloatingMenu";
 import { defaultNodeIcon, IconFrame } from "../fileIcons";
 import { CollapseIcon, ExpandIcon, FileIcon, FolderIcon, HomeIcon, PlusIcon, StarIcon, StarSolidIcon } from "../icons";
 import { useFileManagerContext } from "../context";
@@ -27,42 +26,16 @@ export function Sidebar() {
     toggleFavorite,
     storageKey,
     renderIcon,
-    rootRef,
     classNames,
     labels,
   } = useFileManagerContext();
 
   const [addOpen, setAddOpen] = useState(false);
   const addButtonRef = useRef<HTMLButtonElement>(null);
-  const addMenuRef = useRef<HTMLDivElement>(null);
-  const [addPos, setAddPos] = useState({ top: 0, left: 0, width: 0 });
 
   const canAdd = canManage && (onCreateFolder || onCreateFile);
   const hasExpandedFolders = expandedIds.size > 0;
   const treeToggleLabel = hasExpandedFolders ? labels.collapseAll : labels.expandAll;
-
-  useEffect(() => {
-    if (!addOpen || !addButtonRef.current) return;
-    const rect = addButtonRef.current.getBoundingClientRect();
-    setAddPos({ top: rect.bottom + 6, left: rect.left, width: rect.width });
-  }, [addOpen]);
-
-  useEffect(() => {
-    if (!addOpen) return;
-    focusFirstMenuItem(addMenuRef.current);
-    const onDoc = (event: globalThis.MouseEvent) => {
-      if (addMenuRef.current?.contains(event.target as Node) || addButtonRef.current?.contains(event.target as Node)) {
-        return;
-      }
-      setAddOpen(false);
-    };
-    document.addEventListener("mousedown", onDoc);
-    return () => {
-      document.removeEventListener("mousedown", onDoc);
-    };
-  }, [addOpen]);
-
-  const portalTarget = rootRef.current ?? (typeof document !== "undefined" ? document.body : null);
 
   return (
     <aside className={cn("rfm-sidebar", classNames?.sidebar)}>
@@ -79,54 +52,38 @@ export function Sidebar() {
             <PlusIcon size={16} />
             {labels.addNew}
           </button>
-          {addOpen &&
-            portalTarget &&
-            createPortal(
-              <div
-                ref={addMenuRef}
-                className={cn("rfm-menu", classNames?.menu)}
-                role="menu"
-                tabIndex={-1}
-                onKeyDown={(event) => onMenuKeyDown(event, () => setAddOpen(false))}
-                style={{
-                  position: "fixed",
-                  top: addPos.top,
-                  left: addPos.left,
-                  width: Math.max(addPos.width, 200),
-                  zIndex: 1100,
-                }}
-              >
-                {onCreateFolder && (
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="rfm-menu-item"
-                    onClick={() => {
-                      onCreateFolder(viewFolderId);
-                      setAddOpen(false);
-                    }}
-                  >
-                    <FolderIcon size={16} />
-                    {viewFolderId ? labels.createFolderHere : labels.createFolder}
-                  </button>
-                )}
-                {onCreateFile && (
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="rfm-menu-item"
-                    onClick={() => {
-                      onCreateFile(viewFolderId);
-                      setAddOpen(false);
-                    }}
-                  >
-                    <FileIcon size={16} />
-                    {labels.uploadDocument}
-                  </button>
-                )}
-              </div>,
-              portalTarget
-            )}
+          {addOpen && (
+            <FloatingMenu anchorRef={addButtonRef} gap={6} matchAnchorWidth onClose={() => setAddOpen(false)}>
+              {onCreateFolder && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="rfm-menu-item"
+                  onClick={() => {
+                    onCreateFolder(viewFolderId);
+                    setAddOpen(false);
+                  }}
+                >
+                  <FolderIcon size={16} />
+                  {viewFolderId ? labels.createFolderHere : labels.createFolder}
+                </button>
+              )}
+              {onCreateFile && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="rfm-menu-item"
+                  onClick={() => {
+                    onCreateFile(viewFolderId);
+                    setAddOpen(false);
+                  }}
+                >
+                  <FileIcon size={16} />
+                  {labels.uploadDocument}
+                </button>
+              )}
+            </FloatingMenu>
+          )}
         </div>
       )}
 

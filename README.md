@@ -110,7 +110,7 @@ The component fills its parent. Give the parent a height.
 - OS file drops via `onUpload`; OS folder drops via `onImport` (keeps the folder tree)
 - Virtualized list view for large folders
 - In-pane preview: images always; PDF first page + text when `pdfjs-dist` is installed and `onGetPreviewUrl` is set
-- Context / “more” menus via `getItemActions`
+- Context / “more” menus via `getItemActions`; menus flip within the visible manager and scroll when necessary
 - Bulk action bar via `getBulkActions` (Open / Delete defaults when callbacks exist)
 - Rename, download file/folder, create file hooks
 - Theme tokens (`--rfm-accent`, `--rfm-selected`, surfaces)

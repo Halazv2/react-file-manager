@@ -71,6 +71,7 @@
 }
 
 .rfm-root {
+  position: relative;
   container-type: inline-size;
   box-sizing: border-box;
   display: block;
@@ -696,9 +697,12 @@
 
 .rfm-menu {
   position: absolute;
-  z-index: 40;
-  min-width: 160px;
-  overflow: hidden;
+  z-index: 1100;
+  box-sizing: border-box;
+  min-width: min(160px, var(--rfm-menu-max-width, 100%));
+  max-width: var(--rfm-menu-max-width, 100%);
+  overflow: auto;
+  overscroll-behavior: contain;
   padding: 4px;
   border: 1px solid var(--rfm-border);
   border-radius: var(--rfm-radius);
