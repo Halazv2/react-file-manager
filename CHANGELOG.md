@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.7
+
+### Fixed
+
+- Action, context, and Add New menus flip to stay within the visible file manager and scroll when they are too tall.
+
 ## 0.4.6
 
 ### Fixed
